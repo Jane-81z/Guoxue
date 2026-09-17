@@ -24,7 +24,8 @@ if (!container) throw new Error('缺少 #root 节点')
 
 createRoot(container).render(
   <StrictMode>
-    <BrowserRouter>
+    {/* 挂在子路径时（GitHub Pages），路由要带同样的 basename */}
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <App />
     </BrowserRouter>
   </StrictMode>,

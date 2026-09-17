@@ -2,7 +2,14 @@ import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+/**
+ * 部署路径：默认挂在域名根目录（Vercel / Cloudflare Pages / 自己的服务器）。
+ * 托管在子路径时（例如 GitHub Pages 的 /Guoxue/），用 VITE_BASE=/Guoxue/ 构建。
+ */
+const base = process.env.VITE_BASE ?? '/'
+
 export default defineConfig({
+  base,
   build: {
     rollupOptions: {
       output: {
@@ -24,8 +31,8 @@ export default defineConfig({
         short_name: '国学背诵',
         description: '国学文字背诵：导入、分段、注音、间隔重复、录音播放',
         lang: 'zh-CN',
-        start_url: '/',
-        scope: '/',
+        start_url: base,
+        scope: base,
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#0B0D10',
@@ -44,7 +51,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
         globIgnores: ['**/pwa-*.png'],
-        navigateFallback: '/index.html',
+        navigateFallback: `${base}index.html`,
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         runtimeCaching: [
           {

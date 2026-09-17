@@ -790,24 +790,34 @@ function PassageRow({
             >
               清除拼音修正
             </button>
+            <button type="button" className="btn btn-ghost" onClick={() => void resetPassage(passage.id)}>
+              重置该段进度
+            </button>
+            {hasAudio ? (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => void deleteAudio(passage.id)}
+              >
+                删除录音
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={() => setConfirmDelete(true)}
+            >
+              删除该段
+            </button>
           </div>
         </div>
       ) : (
         <div className="mt-2.5 flex flex-wrap items-center gap-2 pl-8">
           {hasAudio ? (
-            <>
-              <button type="button" className="chip" onClick={handlePlay}>
-                <IconPlay className="h-3.5 w-3.5" />
-                播放
-              </button>
-              <button
-                type="button"
-                className="chip text-ink-faint"
-                onClick={() => void deleteAudio(passage.id)}
-              >
-                删除录音
-              </button>
-            </>
+            <button type="button" className="chip" onClick={handlePlay}>
+              <IconPlay className="h-3.5 w-3.5" />
+              播放
+            </button>
           ) : null}
           <button type="button" className="chip" onClick={() => fileRef.current?.click()}>
             <IconMic className="h-3.5 w-3.5" />
@@ -822,20 +832,6 @@ function PassageRow({
             onClick={() => void patchPassage(passage.id, { isRecite: !passage.isRecite })}
           >
             {passage.isRecite ? '不背' : '要背'}
-          </button>
-          <button
-            type="button"
-            className="chip"
-            onClick={() => void resetPassage(passage.id)}
-          >
-            重置
-          </button>
-          <button
-            type="button"
-            className="chip border-cinnabar/30 text-cinnabar"
-            onClick={() => setConfirmDelete(true)}
-          >
-            删除
           </button>
           {durationMs ? (
             <span className="meta ml-auto">

@@ -167,14 +167,12 @@ export default function SettingsPage() {
         <GroupLabel>显示 DISPLAY</GroupLabel>
         <Band
           label="视觉世界"
-          kicker="WORLD"
           value={findTheme(settings.theme).name}
           tone="dim"
           action={<ActKey label="查看" onPress={() => navigate('/design')} />}
         />
         <Band
           label="正文字号"
-          kicker="FONT SIZE"
           value={`${settings.fontScale.toFixed(2)}×`}
           open={openBand === 'font'}
           onToggle={() => toggleBand('font')}
@@ -191,7 +189,6 @@ export default function SettingsPage() {
         </Band>
         <Band
           label="正文行高"
-          kicker="LINE HEIGHT"
           value={settings.lineHeight.toFixed(2)}
           open={openBand === 'line'}
           onToggle={() => toggleBand('line')}
@@ -208,7 +205,6 @@ export default function SettingsPage() {
         </Band>
         <Band
           label="篇目页显示拼音"
-          kicker="PINYIN · LIBRARY"
           control={
             <LampKey
               on={settings.pinyinVisible}
@@ -220,7 +216,6 @@ export default function SettingsPage() {
         />
         <Band
           label="复习时带拼音"
-          kicker="PINYIN · REVIEW"
           control={
             <LampKey
               on={settings.pinyinInReview}
@@ -232,7 +227,6 @@ export default function SettingsPage() {
         />
         <Band
           label="竖排显示正文"
-          kicker="VERTICAL"
           control={
             <LampKey
               on={settings.vertical}
@@ -244,7 +238,7 @@ export default function SettingsPage() {
         />
         <Band
           label="背诵速度"
-          kicker="CHARS / MIN"
+          kicker="字 / 分钟"
           value={String(settings.recitePace)}
           hint="决定首页「预计用时」读数"
           open={openBand === 'pace'}
@@ -264,7 +258,6 @@ export default function SettingsPage() {
         <GroupLabel>提醒 REMINDER</GroupLabel>
         <Band
           label="每日提醒时间"
-          kicker="REMINDER"
           value={settings.reminderTime}
           open={openBand === 'reminder'}
           onToggle={() => toggleBand('reminder')}
@@ -278,14 +271,14 @@ export default function SettingsPage() {
         </Band>
         <Band
           label="导出日历提醒"
-          kicker="ICS · 一次长期有效"
+          kicker="ICS · 一次导入长期有效"
           action={<ActKey label="导出" onPress={downloadIcs} />}
         />
 
         <GroupLabel>数据 DATA</GroupLabel>
         <Band
           label="篇目与段落"
-          kicker="WORKS / PASSAGES / AUDIO"
+          kicker="篇 / 段 / 录音"
           value={`${works.length} / ${passages.length} / ${audios.length}`}
           hint={storage ? `已占用 ${formatSize(storage.usage)}` : undefined}
         />
@@ -331,7 +324,6 @@ export default function SettingsPage() {
         />
         <Band
           label="持久化存储"
-          kicker="PERSISTED"
           hint={storage?.persisted ? '浏览器不会自动清理' : '建议开启，避免数据被清理'}
           control={
             <LampKey
@@ -346,7 +338,7 @@ export default function SettingsPage() {
         <GroupLabel>装到手机上 INSTALL</GroupLabel>
         <Band
           label="添加到主屏幕"
-          kicker="ADD TO HOME SCREEN"
+          kicker="SAFARI → 分享 → 添加到主屏幕"
           value="3 步"
           tone="dim"
           open={openBand === 'install'}
@@ -365,7 +357,7 @@ export default function SettingsPage() {
         <GroupLabel>危险 IRREVERSIBLE</GroupLabel>
         <Band
           label="清空全部数据"
-          kicker="IRREVERSIBLE"
+          kicker="不可恢复"
           hint="删除所有篇目、录音与复习记录"
           danger
           action={

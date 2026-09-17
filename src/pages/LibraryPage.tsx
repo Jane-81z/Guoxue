@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import Sheet from '../components/Sheet'
@@ -40,23 +40,40 @@ export default function LibraryPage() {
   const today = useToday()
   const [searchParams, setSearchParams] = useSearchParams()
 
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterKey>('all')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-
-  useEffect(() => {
-    const workId = searchParams.get('work')
-    if (workId) {
-      setExpandedId(workId)
-      const next = new URLSearchParams(searchParams)
-      next.delete('work')
-      setSearchParams(next, { replace: true })
-    }
-  }, [searchParams, setSearchParams])
 
   const grouped = useMemo(
     () => works.map((work) => ({ work, items: passagesOfWork(passages, work.id) })),
     [works, passages],
+  )
+
+  // 一次只摊开一篇：当前篇目由地址里的 ?work 决定，所以每篇都可深链
+  const requestedId = searchParams.get('work')
+  const active = useMemo(() => {
+    if (!grouped.length) return null
+    return grouped.find((entry) => entry.work.id === requestedId) ?? grouped[0]
+  }, [grouped, requestedId])
+  const activeIndex = active ? grouped.findIndex((entry) => entry.work.id === active.work.id) : -1
+
+  const goTo = useCallback(
+    (workId: string) => {
+      const next = new URLSearchParams(searchParams)
+      next.set('work', workId)
+      setSearchParams(next, { replace: true })
+      setPickerOpen(false)
+    },
+    [searchParams, setSearchParams],
+  )
+
+  const step = useCallback(
+    (delta: number) => {
+      if (!grouped.length) return
+      const next = (activeIndex + delta + grouped.length) % grouped.length
+      goTo(grouped[next].work.id)
+    },
+    [activeIndex, grouped, goTo],
   )
 
   const visible = useMemo(() => {
@@ -85,75 +102,128 @@ export default function LibraryPage() {
     <>
       <PageHeader
         title="篇目"
-        subtitle={`${works.length} 篇　${passages.length} 段`}
+        subtitle={
+          active
+            ? `第 ${String(activeIndex + 1).padStart(2, '0')} / 共 ${String(grouped.length).padStart(2, '0')} 篇　${passages.length} 段`
+            : `${works.length} 篇`
+        }
         actions={
-          <Link
-            to="/import"
-            className="flex h-9 items-center gap-1 border border-hairline px-3 text-sm text-ink-soft active:bg-paper-deep"
-            style={{ borderRadius: 'var(--c-radius-sm)' }}
-          >
-            <IconPlus className="h-4 w-4" />
-            导入
-          </Link>
+          <>
+            <button
+              type="button"
+              aria-label="篇目一览"
+              className="flex h-9 items-center gap-1 border border-hairline px-3 text-sm text-fg-soft active:bg-well"
+              style={{ borderRadius: 'var(--c-radius-sm)' }}
+              onClick={() => setPickerOpen(true)}
+            >
+              <IconSearch className="h-4 w-4" />
+              篇目
+            </button>
+            <Link
+              to="/import"
+              className="flex h-9 items-center gap-1 border border-hairline px-3 text-sm text-fg-soft active:bg-well"
+              style={{ borderRadius: 'var(--c-radius-sm)' }}
+            >
+              <IconPlus className="h-4 w-4" />
+              导入
+            </Link>
+          </>
         }
       />
 
       <div className="mx-auto max-w-2xl px-4 py-4">
         {works.length === 0 ? (
-          <div className="card px-5 py-10 text-center">
-            <p className="font-song text-lg text-ink">书箱还是空的</p>
-            <p className="mt-2 text-sm leading-relaxed text-ink-faint">
+          <div className="panel px-5 py-10 text-center">
+            <p className="text-[20px] text-fg">书箱还是空的</p>
+            <p className="mt-2 text-[13px] leading-relaxed text-dim">
               把要背的文本粘进来，一行就是一段。
             </p>
             <Link to="/import" className="btn btn-primary mt-4">
               导入第一篇
             </Link>
           </div>
-        ) : (
-          <>
-            <div className="relative mb-3">
-              <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-pale" />
-              <input
-                className="field pl-9"
-                placeholder="搜索篇名、作者或原文"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-            <div className="mb-4 flex gap-2 overflow-x-auto scrollbar-none">
-              {FILTERS.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={`chip shrink-0 ${filter === item.key ? 'chip-active' : ''}`}
-                  onClick={() => setFilter(item.key)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
-            {visible.length === 0 ? (
-              <p className="meta py-6 text-center">没有符合条件的内容。</p>
-            ) : (
-              <ul className="space-y-3">
-                {visible.map(({ work, items }) => (
-                  <WorkCard
-                    key={work.id}
-                    work={work}
-                    items={items}
-                    audioMap={audioByPassageId(audios)}
-                    settings={settings}
-                    today={today}
-                    expanded={expandedId === work.id}
-                    onToggle={() => setExpandedId(expandedId === work.id ? null : work.id)}
-                  />
-                ))}
-              </ul>
-            )}
-          </>
-        )}
+        ) : active ? (
+          <WorkCard
+            key={active.work.id}
+            work={active.work}
+            items={active.items}
+            audioMap={audioByPassageId(audios)}
+            settings={settings}
+            today={today}
+            index={activeIndex}
+            total={grouped.length}
+            onPrev={() => step(-1)}
+            onNext={() => step(1)}
+          />
+        ) : null}
       </div>
+
+      <Sheet
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        title="篇目一览"
+        subtitle={`${works.length} 篇　${passages.length} 段`}
+      >
+        <div className="relative mb-3">
+          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ghost" />
+          <input
+            className="field pl-9"
+            placeholder="搜索篇名、作者或原文"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+        <div className="mb-4 flex gap-2 overflow-x-auto scrollbar-none">
+          {FILTERS.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`chip shrink-0 ${filter === item.key ? 'chip-active' : ''}`}
+              onClick={() => setFilter(item.key)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        {visible.length === 0 ? (
+          <p className="meta py-6 text-center">没有符合条件的内容。</p>
+        ) : (
+          <ul className="space-y-2">
+            {visible.map(({ work, items }) => {
+              const recite = items.filter((p) => p.isRecite)
+              const done = recite.filter((p) => p.srs.history.length > 0).length
+              const isActive = work.id === active?.work.id
+              return (
+                <li key={work.id}>
+                  <button
+                    type="button"
+                    className={`cellrow w-full text-left ${isActive ? 'cellrow-current' : ''}`}
+                    onClick={() => goTo(work.id)}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[17px] leading-tight text-fg">
+                        {work.title}
+                      </span>
+                      <span className="mt-1 block text-[13px] text-dim">
+                        {[work.dynasty, work.author].filter(Boolean).join('・') || '未填朝代作者'}
+                        　{done}/{recite.length} 段已背
+                      </span>
+                    </span>
+                    <span className="segbar shrink-0">
+                      {recite.slice(0, 5).map((p) => (
+                        <i
+                          key={p.id}
+                          className={`seg ${p.srs.history.length ? 'seg-done' : ''}`}
+                        />
+                      ))}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </Sheet>
     </>
   )
 }
@@ -164,11 +234,23 @@ interface WorkCardProps {
   audioMap: Map<string, AudioAsset>
   settings: Settings
   today: string
-  expanded: boolean
-  onToggle: () => void
+  index: number
+  total: number
+  onPrev: () => void
+  onNext: () => void
 }
 
-function WorkCard({ work, items, audioMap, settings, today, expanded, onToggle }: WorkCardProps) {
+function WorkCard({
+  work,
+  items,
+  audioMap,
+  settings,
+  today,
+  index,
+  total,
+  onPrev,
+  onNext,
+}: WorkCardProps) {
   const passages = useAppStore((s) => s.passages)
   const rewriteWorkText = useAppStore((s) => s.rewriteWorkText)
   const uploadAudioBatch = useAppStore((s) => s.uploadAudioBatch)
@@ -193,18 +275,16 @@ function WorkCard({ work, items, audioMap, settings, today, expanded, onToggle }
   }
 
   return (
-    <li className="panel overflow-hidden">
-      <div className="flex items-start gap-2 px-4 py-3.5">
-        <button
-          type="button"
-          className="min-w-0 flex-1 text-left"
-          aria-expanded={expanded}
-          onClick={onToggle}
-        >
+    <article className="panel overflow-hidden">
+      <div className="flex items-start gap-3 px-4 py-3.5">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="truncate font-song text-[17px] text-ink">{work.title}</h2>
+            <h2 className="truncate text-[20px] leading-tight text-fg">{work.title}</h2>
             {progress.dueCount ? (
-              <span className="shrink-0 rounded-[var(--c-radius-sm)] bg-cinnabar/10 px-2 py-0.5 text-[10px] text-cinnabar">
+              <span
+                className="shrink-0 border border-lit/45 px-2 py-0.5 text-[10px] text-lit"
+                style={{ borderRadius: 'var(--c-radius-sm)' }}
+              >
                 待复习 {progress.dueCount}
               </span>
             ) : null}
@@ -239,19 +319,35 @@ function WorkCard({ work, items, audioMap, settings, today, expanded, onToggle }
               {progress.reviewedCount}/{progress.reciteCount} · {progress.mastery}
             </span>
           </div>
-        </button>
-        <button
-          type="button"
-          aria-label={expanded ? '收起' : '展开'}
-          className="mt-1 flex h-8 w-8 items-center justify-center rounded-[var(--c-radius)] text-ink-pale"
-          onClick={onToggle}
-        >
-          <IconChevron className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`} />
-        </button>
+        </div>
+        <div className="shrink-0 text-right">
+          <span className="readout block text-[13px] text-dim">
+            第 {String(index + 1).padStart(2, '0')} / 共 {String(total).padStart(2, '0')} 篇
+          </span>
+          <span className="mt-1.5 flex justify-end gap-1">
+            <button
+              type="button"
+              aria-label="上一篇"
+              className="flex h-8 w-8 items-center justify-center border border-hairline text-fg-soft active:bg-well"
+              style={{ borderRadius: 'var(--c-radius-sm)' }}
+              onClick={onPrev}
+            >
+              <IconChevron className="h-4 w-4 rotate-180" />
+            </button>
+            <button
+              type="button"
+              aria-label="下一篇"
+              className="flex h-8 w-8 items-center justify-center border border-hairline text-fg-soft active:bg-well"
+              style={{ borderRadius: 'var(--c-radius-sm)' }}
+              onClick={onNext}
+            >
+              <IconChevron className="h-4 w-4" />
+            </button>
+          </span>
+        </div>
       </div>
 
-      {expanded ? (
-        <div className="border-t border-paper-line px-4 pb-4 pt-3">
+      <div className="border-t border-paper-line px-4 pb-4 pt-3">
           <div className="mb-3 flex flex-wrap gap-2">
             <button type="button" className="chip" onClick={() => setMetaOpen(true)}>
               编辑篇目信息
@@ -302,8 +398,7 @@ function WorkCard({ work, items, audioMap, settings, today, expanded, onToggle }
               />
             ))}
           </ul>
-        </div>
-      ) : null}
+      </div>
 
       <WorkTextEditor
         open={editorOpen}
@@ -348,7 +443,7 @@ function WorkCard({ work, items, audioMap, settings, today, expanded, onToggle }
         }}
         onCancel={() => setConfirmReset(false)}
       />
-    </li>
+    </article>
   )
 }
 

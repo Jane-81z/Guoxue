@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>设置页五种结构 · 效果图</title>
+    <style>
+      :root {
+        --c-ground: 11 13 16;
+        --c-panel: 16 19 23;
+        --c-well: 8 9 11;
+        --c-hairline: 35 38 43;
+        --c-fg: 226 220 208;
+        --c-fg-soft: 186 179 166;
+        --c-dim: 146 138 126;
+        --c-ghost: 132 124 112;
+        --c-lit: 255 46 31;
+        --c-lit-ghost: 58 27 24;
+        --c-done: 52 208 122;
+        --c-alert: 255 176 32;
+        --font-sans: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        --font-mono: "SF Mono", Consolas, ui-monospace, monospace;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background: #f2f2f0;
+        color: #1a1a1a;
+        font-family: var(--font-sans);
+        padding: 24px;
+      }
+      h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+      .lede { font-size: 13px; color: #555; margin-bottom: 20px; max-width: 60ch; line-height: 1.7; }
+      .deck { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
+      .col { flex: none; width: 390px; }
+      .cap { font-size: 13px; margin-bottom: 8px; }
+      .cap b { font-size: 15px; }
+      .cap span { color: #666; display: block; margin-top: 3px; line-height: 1.5; }
+      .kicker { font-size: 10px; letter-spacing: .18em; color: #a11; font-family: var(--font-mono); }
+
+      .phone {
+        width: 390px;
+        height: 844px;
+        overflow: hidden;
+        background: rgb(var(--c-ground));
+        color: rgb(var(--c-fg));
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #d8d8d4;
+      }
+      .statusbar {
+        height: 46px;
+        flex: none;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding: 0 16px 8px;
+        border-bottom: 1px solid rgb(var(--c-hairline));
+      }
+      .statusbar .t { font-size: 20px; }
+      .statusbar .d { font-size: 10px; letter-spacing: .18em; color: rgb(var(--c-dim)); font-family: var(--font-mono); }
+      .scroll { flex: 1; overflow: hidden; padding: 12px 16px 76px; }
+      .nav {
+        position: relative;
+        height: 60px;
+        flex: none;
+        border-top: 1px solid rgb(var(--c-hairline));
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        font-size: 11px;
+        color: rgb(var(--c-ghost));
+      }
+      .nav .on { color: rgb(var(--c-fg)); }
+
+      .panel { border: 1px solid rgb(var(--c-hairline)); background: rgb(var(--c-panel)); border-radius: 2px; }
+      .well { background: rgb(var(--c-well)); border: 1px solid rgb(var(--c-hairline)); border-radius: 2px; }
+      .readout { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+      .seg { display: block; height: 4px; border-radius: 1px; background: rgb(var(--c-lit-ghost)); }
+      .seg.on { background: rgb(var(--c-lit)); box-shadow: 0 0 8px rgb(var(--c-lit) / .55); }
+      .seg.done { background: rgb(var(--c-done)); box-shadow: 0 0 8px rgb(var(--c-done) / .45); }
+      .seg.alert { background: rgb(var(--c-alert)); }
+      .segbar { display: flex; flex-direction: column; gap: 3px; width: 24px; }
+      .micro { font-size: 10px; letter-spacing: .2em; color: rgb(var(--c-dim)); font-family: var(--font-mono); }
+      .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid rgb(var(--c-hairline)); }
+      .row:last-child { border-bottom: 0; }
+      .row .lb { font-size: 15px; }
+      .row .hint { font-size: 11px; color: rgb(var(--c-dim)); margin-top: 2px; }
+      .val { font-family: var(--font-mono); font-size: 15px; color: rgb(var(--c-fg)); }
+      .val.dim { color: rgb(var(--c-dim)); }
+      .bigval { font-family: var(--font-mono); font-size: 30px; line-height: 1; }
+      .fake-switch { width: 44px; height: 25px; border-radius: 2px; border: 1px solid rgb(var(--c-hairline)); background: rgb(var(--c-well)); position: relative; }
+      .fake-switch.on { border-color: rgb(var(--c-done) / .6); }
+      .fake-switch i { position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 1px; background: rgb(var(--c-ghost)); }
+      .fake-switch.on i { left: 22px; background: rgb(var(--c-done)); }
+
+      /* 两栏 */
+      .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+      .tab { flex: 1; text-align: center; font-size: 11px; padding: 7px 0; border: 1px solid rgb(var(--c-hairline)); border-radius: 2px; color: rgb(var(--c-dim)); }
+      .tab.on { border-color: rgb(var(--c-lit) / .6); color: rgb(var(--c-fg)); }
+
+      /* 卡片瀑布 */
+      .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .card { border: 1px solid rgb(var(--c-hairline)); background: rgb(var(--c-panel)); border-radius: 2px; padding: 12px; min-height: 104px; display: flex; flex-direction: column; }
+      .card .ct { font-size: 14px; }
+      .card .cv { margin-top: auto; font-family: var(--font-mono); font-size: 20px; }
+
+      /* 清单 + 搜索 */
+      .search { display: flex; align-items: center; gap: 8px; border: 1px solid rgb(var(--c-hairline)); background: rgb(var(--c-well)); border-radius: 2px; padding: 9px 11px; margin-bottom: 14px; }
+      .search .ph { font-size: 13px; color: rgb(var(--c-ghost)); }
+
+      /* 导视带 */
+      .band { display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid rgb(var(--c-hairline)); background: rgb(var(--c-panel)); border-radius: 2px; padding: 12px 14px; margin-bottom: 8px; }
+      .band.alert { border-color: rgb(var(--c-alert) / .5); }
+      .band .bl { font-size: 14px; }
+      .band .bs { font-size: 10px; color: rgb(var(--c-dim)); margin-top: 3px; letter-spacing: .06em; }
+
+      /* 翻牌读数 */
+      .flap { width: 96px; height: 62px; border: 1px solid rgb(var(--c-hairline)); background: rgb(var(--c-panel)); border-radius: 2px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 30px; }
+      .track { position: relative; height: 6px; background: rgb(var(--c-well)); border: 1px solid rgb(var(--c-hairline)); border-radius: 2px; margin: 14px 0 18px; }
+      .track i { position: absolute; left: 42%; top: -4px; width: 12px; height: 12px; background: rgb(var(--c-lit)); border-radius: 2px; box-shadow: 0 0 10px rgb(var(--c-lit) / .5); }
+      .ticks { display: flex; justify-content: space-between; margin-top: -14px; }
+      .ticks span { font-size: 9px; color: rgb(var(--c-ghost)); font-family: var(--font-mono); }
+    </style>
+  </head>
+  <body>
+    <h1>设置页 · 五种结构</h1>
+    <p class="lede">
+      同一套功能、同一套令牌，只有排布不同。每张效果图都是 390×844 的真实渲染（内容用的是当前设置页里真实存在的项。
+      第 4 张「导视带」是目录挑战牌融合后的版本，第 5 张「翻牌读数」只保留瞬时反馈、去掉翻牌噪音。
+    </p>
+    <div class="deck">
+      <!-- 1 两栏 -->
+      <div class="col">
+        <p class="cap"><span class="kicker">THE ROLL</span><b>① 两栏</b><span>顶上一排分区读数，一屏只显示一个分区。好处几乎只在宽屏。</span></p>
+        <div class="phone">
+          <div class="statusbar"><span class="t">设置</span><span class="d">DISPLAY</span></div>
+          <div class="scroll">
+            <div class="tabs">
+              <span class="tab on">显示</span><span class="tab">提醒</span><span class="tab">数据</span><span class="tab">安装</span><span class="tab">危险</span>
+            </div>
+            <div class="panel" style="padding: 4px 14px">
+              <div class="row"><span><span class="lb">正文字号</span><span class="hint">当前 1.00 倍</span></span><span class="val">1.00×</span></div>
+              <div class="row"><span><span class="lb">正文行高</span><span class="hint">背诵时的行距</span></span><span class="val">1.90</span></div>
+              <div class="row"><span><span class="lb">篇目页显示拼音</span><span class="hint">汉字上方注音</span></span><span class="fake-switch"><i></i></span></div>
+              <div class="row"><span><span class="lb">复习时带拼音</span></span><span class="fake-switch on"><i></i></span></div>
+              <div class="row"><span><span class="lb">竖排显示正文</span></span><span class="fake-switch"><i></i></span></div>
+              <div class="row"><span><span class="lb">背诵速度</span><span class="hint">决定预计用时读数</span></span><span class="val">150</span></div>
+            </div>
+          </div>
+          <div class="nav"><span>复习</span><span>篇目</span><span>播放</span><span class="on">设置</span></div>
+        </div>
+      </div>
+
+      <!-- 2 卡片瀑布 -->
+      <div class="col">
+        <p class="cap"><b>② 卡片瀑布</b><span>每类一张小卡、两列并排。卡是最省事的容器：加了边框圆角，没说清关系。</span></p>
+        <div class="phone">
+          <div class="statusbar"><span class="t">设置</span><span class="d">SIX GROUPS</span></div>
+          <div class="scroll">
+            <div class="cards">
+              <div class="card"><span class="ct">显示</span><span class="cv">17px</span></div>
+              <div class="card"><span class="ct">背诵速度</span><span class="cv">150</span></div>
+              <div class="card"><span class="ct">提醒</span><span class="cv">20:00</span></div>
+              <div class="card"><span class="ct">数据</span><span class="cv">3/6</span></div>
+              <div class="card"><span class="ct">装到手机上</span><span class="cv">3 步</span></div>
+              <div class="card" style="border-color: rgb(var(--c-alert) / .45)"><span class="ct">清空数据</span><span class="cv" style="color: rgb(var(--c-alert))">危险</span></div>
+            </div>
+          </div>
+          <div class="nav"><span>复习</span><span>篇目</span><span>播放</span><span class="on">设置</span></div>
+        </div>
+      </div>
+
+      <!-- 3 清单 + 搜索 -->
+      <div class="col">
+        <p class="cap"><b>③ 清单 + 搜索</b><span>顶部搜索框 + 扁平清单。十几项设置加搜索，是在解决一个没有的问题。</span></p>
+        <div class="phone">
+          <div class="statusbar"><span class="t">设置</span><span class="d">SEARCH</span></div>
+          <div class="scroll">
+            <div class="search"><span class="micro">⌕</span><span class="ph">搜索设置，例如「行高」</span></div>
+            <p class="micro" style="margin-bottom: 4px">显示</p>
+            <div class="panel" style="padding: 0 14px">
+              <div class="row"><span class="lb">视觉世界</span><span class="val dim">日课刻度 ›</span></div>
+              <div class="row"><span class="lb">正文字号</span><span class="val">1.00×</span></div>
+              <div class="row"><span class="lb">正文行高</span><span class="val">1.90</span></div>
+              <div class="row"><span class="lb">篇目页显示拼音</span><span class="fake-switch"><i></i></span></div>
+              <div class="row"><span class="lb">竖排显示正文</span><span class="fake-switch"><i></i></span></div>
+            </div>
+            <p class="micro" style="margin: 14px 0 4px">提醒</p>
+            <div class="panel" style="padding: 0 14px">
+              <div class="row"><span class="lb">每日提醒时间</span><span class="val">20:00</span></div>
+              <div class="row"><span class="lb">导出日历提醒</span><span class="val dim">.ics ›</span></div>
+            </div>
+          </div>
+          <div class="nav"><span>复习</span><span>篇目</span><span>播放</span><span class="on">设置</span></div>
+        </div>
+      </div>
+
+      <!-- 4 导视带 -->
+      <div class="col">
+        <p class="cap"><span class="kicker">我推荐</span><b>④ 导视带</b><span>每行左边名字、右边当前值的大号读数，像机场导视牌：状态一眼可见。</span></p>
+        <div class="phone">
+          <div class="statusbar"><span class="t">设置</span><span class="d">STATUS BOARD</span></div>
+          <div class="scroll">
+            <div class="band"><span><span class="bl">正文字号</span><span class="bs">FONT SIZE</span></span><span class="bigval">1.00×</span></div>
+            <div class="band"><span><span class="bl">正文行高</span><span class="bs">LINE HEIGHT</span></span><span class="bigval">1.90</span></div>
+            <div class="band"><span><span class="bl">背诵速度</span><span class="bs">CHARS / MIN</span></span><span class="bigval">150</span></div>
+            <div class="band"><span><span class="bl">每日提醒</span><span class="bs">REMINDER</span></span><span class="bigval">20:00</span></div>
+            <div class="band"><span><span class="bl">持久化存储</span><span class="bs">PERSISTED</span></span><span class="bigval" style="color: rgb(var(--c-done))">ON</span></div>
+            <div class="band alert"><span><span class="bl">清空全部数据</span><span class="bs">IRREVERSIBLE</span></span><span class="segbar" style="width: 40px"><i class="seg alert"></i><i class="seg"></i><i class="seg"></i></span></div>
+          </div>
+          <div class="nav"><span>复习</span><span>篇目</span><span>播放</span><span class="on">设置</span></div>
+        </div>
+      </div>
+
+      <!-- 5 翻牌读数 -->
+      <div class="col">
+        <p class="cap"><b>⑤ 翻牌读数</b><span>连续值改成刻度滑杆，右侧读数翻到新值。翻牌动作放慢就成了装饰。</span></p>
+        <div class="phone">
+          <div class="statusbar"><span class="t">设置</span><span class="d">DIAL</span></div>
+          <div class="scroll">
+            <div style="display: flex; align-items: center; justify-content: space-between">
+              <span><span class="bl" style="font-size: 15px">正文字号</span><span class="hint" style="font-size: 11px; color: rgb(var(--c-dim))">拖动即时生效</span></span>
+              <span class="flap">1.00</span>
+            </div>
+            <div class="track"><i></i></div>
+            <div class="ticks"><span>0.85</span><span>1.00</span><span>1.25</span><span>1.50</span></div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 26px">
+              <span><span class="bl" style="font-size: 15px">背诵速度</span><span class="hint" style="font-size: 11px; color: rgb(var(--c-dim))">字 / 分钟</span></span>
+              <span class="flap">150</span>
+            </div>
+            <div class="track"><i style="left: 30%"></i></div>
+            <div class="ticks"><span>120</span><span>150</span><span>180</span><span>200</span></div>
+
+            <div class="panel" style="padding: 0 14px; margin-top: 22px">
+              <div class="row"><span class="lb">篇目页显示拼音</span><span class="fake-switch"><i></i></span></div>
+              <div class="row"><span class="lb">竖排显示正文</span><span class="fake-switch"><i></i></span></div>
+            </div>
+          </div>
+          <div class="nav"><span>复习</span><span>篇目</span><span>播放</span><span class="on">设置</span></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

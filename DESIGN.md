@@ -246,6 +246,11 @@ components:
 - **Shadow Strategy:** 默认无阴影，参考 Elevation & Depth。
 - **Border:** 1px hairline；当前格与完成格以同色低透明度改变边框。
 - **Internal Padding:** 12–16px，紧密但不挤压正文。
+- **One card at a time:** 篇目页只摊开**一张**卡（`panel`），不做叠层、不做卡片流。切篇靠卡头右侧的 `第 NN / 共 NN 篇` 等宽读数与前后键，当前篇写进地址 `?work=`，所以每篇都可深链。浏览与编辑是同一个动作：段落在卡内就地改。
+
+### Band
+
+`src/components/Band.tsx`：设置页的基元，也是「导视带」这个结构的载体。整幅横带——左边是名字（15px）与一行等宽小签（10px，如 `FONT SIZE`／`IRREVERSIBLE`），右边是**当前值**：字符串走 24px 等宽读数，开关走状态灯键（开启＝段点亮成绿 + `ON`，关闭＝熄灭 + `OFF`）。需要修改时同一条带就地展开控制区（滑杆、时间输入），用一条 `border-t` 发丝线分隔。危险项单独成带，用琥珀边包住。
 
 ### Inputs / Fields
 

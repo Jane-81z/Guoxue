@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>篇目页 · 设置页 —— 改完之后的样子</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 28px;
+        background: #f2f2f0;
+        color: #16181b;
+        font: 15px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+      h1 { font-size: 22px; margin: 0 0 6px; font-weight: 600; }
+      .lede { color: #555; margin: 0 0 22px; max-width: 76ch; }
+      .deck { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+      figure { margin: 0; width: 390px; }
+      figcaption { font-size: 13px; color: #444; margin-bottom: 10px; }
+      figcaption b { font-size: 16px; color: #111; display: block; margin-bottom: 4px; }
+      img {
+        width: 390px;
+        display: block;
+        border: 1px solid #d9d9d5;
+        background: #0b0d10;
+      }
+      ul { margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: #444; }
+      li { margin-bottom: 4px; }
+      code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; background: #e9e9e5; padding: 1px 4px; border-radius: 2px; }
+    </style>
+  </head>
+  <body>
+    <h1>两页改完的样子</h1>
+    <p class="lede">
+      左边是按你选的「卡片盒，但不要叠层，只显示当前篇目」重做的篇目页；右边是按「导视带」重做的设置页。
+      两张都是 390×844 的真机尺寸截图，内容用的是示例数据（三篇、六段）。
+    </p>
+    <div class="deck">
+      <figure>
+        <figcaption>
+          <b>篇目页 · 单卡</b>
+          一屏只有当前这一篇，没有背后的叠层。
+        </figcaption>
+        <img src="app-library.png" alt="篇目页：单卡结构" />
+        <ul>
+          <li>卡头右侧是 <code>第 01 / 共 03 篇</code> 读数 + 前后翻篇键</li>
+          <li>段码一行显示「要背的段里有几段已背」，右侧是 <code>0/3 · 0</code></li>
+          <li>段落行是井式底、等宽段号；点「编辑」就地改原文/注音/注释</li>
+          <li>「篇目」「导入」收进页头；搜索与筛选在「篇目」抽屉里</li>
+          <li>切篇会写进地址（<code>?work=…</code>），每一篇都能深链</li>
+        </ul>
+      </figure>
+      <figure>
+        <figcaption>
+          <b>设置页 · 导视带</b>
+          每一行右边就是当前值，不用点进去。
+        </figcaption>
+        <img src="app-settings.png" alt="设置页：导视带结构" />
+        <ul>
+          <li>每行：左边名字 + 等宽小签，右边大号读数（<code>1.00×</code>、<code>1.90</code>、<code>150</code>、<code>20:00</code>）</li>
+          <li>开关类用状态灯键：开启＝段点亮成绿 + <code>ON</code>，关闭＝熄灭 + <code>OFF</code></li>
+          <li>要改就在同一条带上展开：字号/行高/背诵速度是滑杆，提醒时间是时间输入</li>
+          <li>数据组一条显示 <code>3 / 6 / 0</code>（篇 / 段 / 录音）与实际占用</li>
+          <li>危险操作单独一条琥珀边，标签 <code>IRREVERSIBLE</code></li>
+        </ul>
+      </figure>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,141 @@
+{
+  "title": "设置页要长成什么结构",
+  "question": "同样只选结构：骰子发到「两栏」。留下它、换一张牌，还是重掷？",
+  "options": [
+    {
+      "id": "wide-two-column",
+      "label": "两栏",
+      "kicker": "THE ROLL",
+      "lineage": "宽屏左右分栏，窄屏收成顶部读数条",
+      "thesis": "宽屏上左栏是分区索引、右栏是当前分区的设置；手机上左栏收成顶上一排分区读数，一屏只显示一个分区。",
+      "palette": ["#0B0D10", "#101317", "#FF2E1F", "#847C70"],
+      "materials": ["分区索引", "面板", "等宽值读数"],
+      "viewport": "1440：左栏固定索引（显示 / 提醒 / 数据 / 安装 / 危险），右栏是当前分区面板。390：顶部一排分区读数，下面只显示当前分区，危险操作单独一屏。",
+      "risk": "桌面上很顺手，但手机上仍然是一列长清单——收益几乎全在宽屏。",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "分区索引（宽屏左栏 / 手机顶部）", "x": 0, "y": 0, "w": 3, "h": 10, "accent": true },
+          { "label": "当前分区面板", "x": 3, "y": 0, "w": 9, "h": 8 },
+          { "label": "危险操作", "x": 3, "y": 8, "w": 9, "h": 2 }
+        ]
+      }
+    },
+    {
+      "id": "card-waterfall",
+      "label": "卡片瀑布",
+      "lineage": "每组一张小卡，两列并排",
+      "thesis": "每一类设置一张小卡，两列并排铺开，扫一眼就能找到那一项。",
+      "palette": ["#0B0D10", "#101317", "#34D07A"],
+      "materials": ["小卡", "两列栅格"],
+      "viewport": "手机上两列小卡，卡内两三行；点卡进入细节或就地改，底部留一行危险操作。",
+      "risk": "卡是「最省事的容器」——它给设置项加上了边框和圆角，却没有说清任何关系。",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "小卡组（两列）", "x": 0, "y": 0, "w": 12, "h": 7 },
+          { "label": "其余分组", "x": 0, "y": 7, "w": 12, "h": 3 }
+        ]
+      }
+    },
+    {
+      "id": "searchable-list",
+      "label": "清单 + 搜索",
+      "lineage": "顶部搜索框 + 扁平可搜清单",
+      "thesis": "顶部一个搜索框，设置项是一条扁平的可搜清单，输两个字就跳到那一项。",
+      "palette": ["#0B0D10", "#101317", "#FF2E1F"],
+      "materials": ["搜索栏", "分组标题", "右侧值读数"],
+      "viewport": "搜索框固定在顶部；下面是分组标题与行，每行右侧是当前值读数，回车即跳到该项并高亮。",
+      "risk": "这个 App 一共十来个设置项——给它们加搜索，是在解决一个它没有的问题。",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "搜索框", "x": 0, "y": 0, "w": 12, "h": 2, "accent": true },
+          { "label": "分组标题 + 行", "x": 0, "y": 2, "w": 8, "h": 7 },
+          { "label": "当前值读数", "x": 8, "y": 2, "w": 4, "h": 7 }
+        ]
+      }
+    },
+    {
+      "id": "challenger-wayfinding-cartography-signage-terminal-yellow-wayfinding",
+      "label": "导视带",
+      "verdict": "competitive",
+      "lineage": "机场导视：严格边距、右侧纪念碑式编号",
+      "thesis": "设置像机场导视：每一组是一条带框的横带，值用大号读数写在最右，状态一眼可读。",
+      "palette": ["#0B0D10", "#101317", "#FF2E1F", "#FFB020"],
+      "materials": ["框带", "右侧大号值", "严格边距规则"],
+      "viewport": "每条横带左侧是标签、右侧是当前值的大号读数；危险操作单独一条，用琥珀边标出。",
+      "case": "产品清晰强：右边永远是大号值，扫一眼就知道现在是什么状态，且方向感（哪条属于哪组）由边距规则承担。但机场的饱和黄属于它自己的世界，这里只借排布与层级纪律。",
+      "risk": "横带做满整屏会显得吵，得靠间距压住。",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "横带 × 4（左标签 + 右大号值）", "x": 0, "y": 0, "w": 12, "h": 8, "accent": true },
+          { "label": "危险操作带", "x": 0, "y": 8, "w": 12, "h": 2 }
+        ]
+      }
+    },
+    {
+      "id": "challenger-signals-instruments-split-flap-concourse",
+      "label": "翻牌读数",
+      "verdict": "competitive",
+      "lineage": "车站翻牌板：一格一格翻过去",
+      "thesis": "改一个值就像翻牌板那样一格一格翻过去——「刚被改动」这件事本身可见。",
+      "palette": ["#0B0D10", "#101317", "#FF2E1F", "#847C70"],
+      "materials": ["翻牌格", "刻度滑杆", "瞬时反馈"],
+      "viewport": "连续值（字号、行高、背诵速度）用刻度滑杆调，右侧的翻牌格同步翻到新值；切页签时整列翻一次。",
+      "case": "产品清晰：它把「值刚刚变了」做成可见的瞬时反馈，适合连续值。但翻牌的动作很吵，与「一个人安静地调一个数」冲突，只能保留瞬时反馈，不能保留它的噪音。",
+      "risk": "动作一旦放慢，每次调参都要等翻牌，就成了装饰。",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "值（翻牌格）", "x": 4, "y": 0, "w": 4, "h": 3, "accent": true },
+          { "label": "刻度滑杆", "x": 0, "y": 3, "w": 12, "h": 1 },
+          { "label": "其余设置行", "x": 0, "y": 4, "w": 12, "h": 6 }
+        ]
+      }
+    },
+    {
+      "id": "challenger-notation-diagram-systems-orienteering-map",
+      "label": "定向图例",
+      "verdict": "declined",
+      "lineage": "定向越野地图：等高线是真相，图例在前",
+      "thesis": "设置页先给一张图例，说明每个标记是什么意思，再让人读下面的场。",
+      "palette": ["#0B0D10", "#101317", "#847C70"],
+      "materials": ["图例", "等高线", "路线色"],
+      "case": "融合不佳：设置项之间没有地形关系，等高线画不出来。",
+      "kept": "图例先于地图：状态的含义要在使用前说清，而不是靠猜。"
+    },
+    {
+      "id": "challenger-medium-native-ascii-live-scene-render",
+      "label": "字符渲染",
+      "verdict": "declined",
+      "lineage": "用字符密度代替光影的实时画面",
+      "thesis": "用字符的密度表达数值的大小，整页像一台字符终端。",
+      "palette": ["#0B0D10", "#847C70", "#34D07A"],
+      "materials": ["字符密度", "等宽栅格"],
+      "case": "融合不佳：字符终端是一层伪装成技术感的装扮，而这个世界的语法是发光段，不是字符。",
+      "kept": "用密度表达强度，而不是用颜色表达强度。"
+    },
+    {
+      "id": "challenger-kinetic-sculpture-automata-tensegrity-breathing-column",
+      "label": "受力图",
+      "verdict": "declined",
+      "lineage": "张拉整体：把负载沿路径归因",
+      "thesis": "每个设置项都标出它影响谁、被谁影响。",
+      "palette": ["#0B0D10", "#101317", "#847C70"],
+      "materials": ["节点与引线", "等宽注记"],
+      "case": "融合不佳：十来个设置项之间没有值得画的依赖网络。",
+      "kept": "改动要有归因：一处改动必须能说清它影响的后果。"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code", "toggle": false },
+  "canon": false,
+  "steer": true
+}

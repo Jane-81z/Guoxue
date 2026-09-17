@@ -1,61 +1,79 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import Dialog from '../components/Dialog'
-import {
-  IconCalendar,
-  IconDownload,
-  IconTrash,
-  IconUpload,
-} from '../components/Icons'
+import Band from '../components/Band'
+import { IconDownload, IconUpload } from '../components/Icons'
 import { useAppStore } from '../store/useAppStore'
 import { buildDailyReminderIcs } from '../lib/ics'
 import { downloadBlob } from '../lib/backup'
 import { todayKey } from '../lib/date'
 import { findTheme } from '../theme/themes'
-import { useNavigate } from 'react-router-dom'
 import { MAX_RECITE_PACE, MIN_RECITE_PACE } from '../lib/estimate'
 
 const APP_VERSION = '0.1.0'
 
-function Row({
-  title,
-  hint,
-  children,
+/** 状态灯键：开＝段点亮成绿，关＝熄灭 */
+function LampKey({
+  on,
+  onLabel,
+  offLabel,
+  onPress,
 }: {
-  title: string
-  hint?: string
-  children: ReactNode
+  on: boolean
+  onLabel: string
+  offLabel: string
+  onPress: () => void
 }) {
-  return (
-    <div className="flex items-center justify-between gap-3 py-3">
-      <div className="min-w-0">
-        <p className="text-[15px] text-ink">{title}</p>
-        {hint ? <p className="meta mt-0.5">{hint}</p> : null}
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  )
-}
-
-function Toggle({ value, onChange }: { value: boolean; onChange: (next: boolean) => void }) {
   return (
     <button
       type="button"
-      role="switch"
-      aria-checked={value}
-      className={`relative h-7 w-12 rounded-full border transition-colors ${
-        value ? 'border-jade bg-jade' : 'border-paper-line bg-paper-deep'
+      aria-pressed={on}
+      onClick={onPress}
+      className={`flex items-center gap-2 border px-2.5 py-1.5 ${
+        on ? 'border-done/55' : 'border-hairline'
       }`}
-      onClick={() => onChange(!value)}
+      style={{ borderRadius: 'var(--c-radius-sm)' }}
     >
-      <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-paper-soft shadow transition-all ${
-          value ? 'left-6' : 'left-0.5'
-        }`}
-      />
+      <span className="segbar w-3">
+        <i className={`seg ${on ? 'seg-done' : ''}`} />
+        <i className={`seg ${on ? 'seg-done' : ''}`} />
+      </span>
+      <span className={`readout text-[11px] ${on ? 'text-done' : 'text-dim'}`}>
+        {on ? onLabel : offLabel}
+      </span>
     </button>
   )
+}
+
+/** 动作键 */
+function ActKey({
+  label,
+  onPress,
+  tone = 'default',
+}: {
+  label: string
+  onPress: () => void
+  tone?: 'default' | 'alert'
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onPress}
+      className={`border px-3 py-1.5 text-[13px] ${
+        tone === 'alert'
+          ? 'border-alert/50 text-alert hover:bg-alert/5'
+          : 'border-hairline text-fg-soft hover:bg-well'
+      }`}
+      style={{ borderRadius: 'var(--c-radius-sm)' }}
+    >
+      {label}
+    </button>
+  )
+}
+
+function GroupLabel({ children }: { children: string }) {
+  return <p className="readout px-1 pt-2 text-[10px] tracking-[0.24em] text-dim">{children}</p>
 }
 
 export default function SettingsPage() {
@@ -75,6 +93,7 @@ export default function SettingsPage() {
   const [storage, setStorage] = useState<{ usage: number; quota: number; persisted: boolean } | null>(
     null,
   )
+  const [openBand, setOpenBand] = useState<string | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
   const [clearWord, setClearWord] = useState('')
   const [pendingImport, setPendingImport] = useState<File | null>(null)
@@ -127,10 +146,7 @@ export default function SettingsPage() {
       title: '今日背书',
       description: '打开「国学背诵」，完成今日到期的复习卡片。',
     })
-    downloadBlob(
-      new Blob([ics], { type: 'text/calendar;charset=utf-8' }),
-      '国学背诵-每日提醒.ics',
-    )
+    downloadBlob(new Blob([ics], { type: 'text/calendar;charset=utf-8' }), '国学背诵-每日提醒.ics')
     notify('日历文件已下载，导入「日历」App 即可每日提醒', 'success')
   }
 
@@ -140,185 +156,234 @@ export default function SettingsPage() {
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   }
 
+  const toggleBand = (id: string) => setOpenBand((prev) => (prev === id ? null : id))
+  const sliderClass = 'w-full accent-[#FF2E1F]'
+
   return (
     <>
-      <PageHeader title="设置" subtitle={`国学背诵 v${APP_VERSION}`} />
-      <div className="mx-auto max-w-2xl space-y-4 px-4 py-4">
-        <section className="card px-4 py-1.5">
-          <h2 className="pt-3 font-song text-base text-ink">显示</h2>
-          <div className="divide-y divide-paper-line">
-            <Row title="视觉世界" hint={`当前：${findTheme(settings.theme).name}`}>
-              <button type="button" className="btn btn-ghost" onClick={() => navigate('/design')}>
-                切换
-              </button>
-            </Row>
-            <Row
-              title="背诵速度"
-              hint={`${settings.recitePace} 字/分钟 · 决定「预计用时」读数`}
+      <PageHeader title="设置" subtitle={`国学背诵 v${APP_VERSION} · 所有数据只在本机`} />
+
+      <div className="mx-auto max-w-2xl space-y-2 px-4 py-4">
+        <GroupLabel>显示 DISPLAY</GroupLabel>
+        <Band
+          label="视觉世界"
+          kicker="WORLD"
+          value={findTheme(settings.theme).name}
+          tone="dim"
+          action={<ActKey label="查看" onPress={() => navigate('/design')} />}
+        />
+        <Band
+          label="正文字号"
+          kicker="FONT SIZE"
+          value={`${settings.fontScale.toFixed(2)}×`}
+          open={openBand === 'font'}
+          onToggle={() => toggleBand('font')}
+        >
+          <input
+            type="range"
+            min={0.85}
+            max={1.5}
+            step={0.05}
+            value={settings.fontScale}
+            className={sliderClass}
+            onChange={(e) => void updateSettings({ fontScale: Number.parseFloat(e.target.value) })}
+          />
+        </Band>
+        <Band
+          label="正文行高"
+          kicker="LINE HEIGHT"
+          value={settings.lineHeight.toFixed(2)}
+          open={openBand === 'line'}
+          onToggle={() => toggleBand('line')}
+        >
+          <input
+            type="range"
+            min={1.5}
+            max={2.6}
+            step={0.05}
+            value={settings.lineHeight}
+            className={sliderClass}
+            onChange={(e) => void updateSettings({ lineHeight: Number.parseFloat(e.target.value) })}
+          />
+        </Band>
+        <Band
+          label="篇目页显示拼音"
+          kicker="PINYIN · LIBRARY"
+          control={
+            <LampKey
+              on={settings.pinyinVisible}
+              onLabel="ON"
+              offLabel="OFF"
+              onPress={() => void updateSettings({ pinyinVisible: !settings.pinyinVisible })}
+            />
+          }
+        />
+        <Band
+          label="复习时带拼音"
+          kicker="PINYIN · REVIEW"
+          control={
+            <LampKey
+              on={settings.pinyinInReview}
+              onLabel="ON"
+              offLabel="OFF"
+              onPress={() => void updateSettings({ pinyinInReview: !settings.pinyinInReview })}
+            />
+          }
+        />
+        <Band
+          label="竖排显示正文"
+          kicker="VERTICAL"
+          control={
+            <LampKey
+              on={settings.vertical}
+              onLabel="ON"
+              offLabel="OFF"
+              onPress={() => void updateSettings({ vertical: !settings.vertical })}
+            />
+          }
+        />
+        <Band
+          label="背诵速度"
+          kicker="CHARS / MIN"
+          value={String(settings.recitePace)}
+          hint="决定首页「预计用时」读数"
+          open={openBand === 'pace'}
+          onToggle={() => toggleBand('pace')}
+        >
+          <input
+            type="range"
+            min={MIN_RECITE_PACE}
+            max={MAX_RECITE_PACE}
+            step={10}
+            value={settings.recitePace}
+            className={sliderClass}
+            onChange={(e) => void updateSettings({ recitePace: Number.parseInt(e.target.value, 10) })}
+          />
+        </Band>
+
+        <GroupLabel>提醒 REMINDER</GroupLabel>
+        <Band
+          label="每日提醒时间"
+          kicker="REMINDER"
+          value={settings.reminderTime}
+          open={openBand === 'reminder'}
+          onToggle={() => toggleBand('reminder')}
+        >
+          <input
+            type="time"
+            className="field"
+            value={settings.reminderTime}
+            onChange={(e) => void updateSettings({ reminderTime: e.target.value })}
+          />
+        </Band>
+        <Band
+          label="导出日历提醒"
+          kicker="ICS · 一次长期有效"
+          action={<ActKey label="导出" onPress={downloadIcs} />}
+        />
+
+        <GroupLabel>数据 DATA</GroupLabel>
+        <Band
+          label="篇目与段落"
+          kicker="WORKS / PASSAGES / AUDIO"
+          value={`${works.length} / ${passages.length} / ${audios.length}`}
+          hint={storage ? `已占用 ${formatSize(storage.usage)}` : undefined}
+        />
+        <Band
+          label="导出数据"
+          kicker="JSON"
+          action={
+            <button
+              type="button"
+              className="flex items-center gap-1.5 border border-hairline px-3 py-1.5 text-[13px] text-fg-soft hover:bg-well"
+              style={{ borderRadius: 'var(--c-radius-sm)' }}
+              onClick={() => void exportJson()}
             >
-              <input
-                type="range"
-                min={MIN_RECITE_PACE}
-                max={MAX_RECITE_PACE}
-                step={10}
-                value={settings.recitePace}
-                className="w-36 accent-[#FF2E1F]"
-                onChange={(e) =>
-                  void updateSettings({ recitePace: Number.parseInt(e.target.value, 10) })
-                }
-              />
-            </Row>
-            <Row title="正文字号" hint={`${settings.fontScale.toFixed(2)} 倍`}>
-              <input
-                type="range"
-                min={0.85}
-                max={1.5}
-                step={0.05}
-                value={settings.fontScale}
-                className="w-36 accent-[#23211E]"
-                onChange={(e) =>
-                  void updateSettings({ fontScale: Number.parseFloat(e.target.value) })
-                }
-              />
-            </Row>
-            <Row title="正文行高" hint={settings.lineHeight.toFixed(2)}>
-              <input
-                type="range"
-                min={1.5}
-                max={2.6}
-                step={0.05}
-                value={settings.lineHeight}
-                className="w-36 accent-[#23211E]"
-                onChange={(e) =>
-                  void updateSettings({ lineHeight: Number.parseFloat(e.target.value) })
-                }
-              />
-            </Row>
-            <Row title="篇目页显示拼音" hint="汉字上方注音">
-              <Toggle
-                value={settings.pinyinVisible}
-                onChange={(next) => void updateSettings({ pinyinVisible: next })}
-              />
-            </Row>
-            <Row title="复习显示原文时带拼音">
-              <Toggle
-                value={settings.pinyinInReview}
-                onChange={(next) => void updateSettings({ pinyinInReview: next })}
-              />
-            </Row>
-            <Row title="竖排显示正文" hint="适合熟悉竖读的篇目">
-              <Toggle
-                value={settings.vertical}
-                onChange={(next) => void updateSettings({ vertical: next })}
-              />
-            </Row>
-          </div>
-        </section>
-
-        <section className="card px-4 py-1.5">
-          <h2 className="pt-3 font-song text-base text-ink">复习提醒</h2>
-          <div className="divide-y divide-paper-line">
-            <Row title="每日提醒时间" hint="导出日历后每天此时提醒">
-              <input
-                type="time"
-                className="field w-28 py-1.5 text-center"
-                value={settings.reminderTime}
-                onChange={(e) => void updateSettings({ reminderTime: e.target.value })}
-              />
-            </Row>
-            <Row title="导出日历提醒（.ics）" hint="导入 iPhone 日历，一次长期有效">
-              <button type="button" className="btn btn-ghost" onClick={downloadIcs}>
-                <IconCalendar className="h-4 w-4" />
-                导出
-              </button>
-            </Row>
-          </div>
-          <p className="meta pb-3">
-            提示：这是每天固定时间的循环提醒，不会逐卡排期。今天该背什么，打开 App 首页即知。
-          </p>
-        </section>
-
-        <section className="card px-4 py-1.5">
-          <h2 className="pt-3 font-song text-base text-ink">数据与备份</h2>
-          <p className="meta mt-1">
-            当前 {works.length} 篇　{passages.length} 段　{audios.length} 段录音
-            {storage ? `　占用 ${formatSize(storage.usage)}` : ''}
-          </p>
-          <div className="divide-y divide-paper-line">
-            <Row title="导出数据（JSON）" hint="原文、拼音、注释、复习进度与打卡">
-              <button type="button" className="btn btn-ghost" onClick={() => void exportJson()}>
-                <IconDownload className="h-4 w-4" />
-                导出
-              </button>
-            </Row>
-            <Row title="导入数据（JSON）" hint="会覆盖当前全部文字数据">
-              <button type="button" className="btn btn-ghost" onClick={() => jsonInputRef.current?.click()}>
-                <IconUpload className="h-4 w-4" />
-                导入
-              </button>
-            </Row>
-            <Row title="导出录音（ZIP）" hint="按篇目打包全部音频文件">
-              <button type="button" className="btn btn-ghost" onClick={() => void exportAudio()}>
-                <IconDownload className="h-4 w-4" />
-                导出
-              </button>
-            </Row>
-            <Row title="导入录音（ZIP）" hint="需先导入对应的数据文件">
-              <button type="button" className="btn btn-ghost" onClick={() => zipInputRef.current?.click()}>
-                <IconUpload className="h-4 w-4" />
-                导入
-              </button>
-            </Row>
-            <Row
-              title="持久化存储"
-              hint={storage?.persisted ? '已开启，浏览器不会自动清理' : '建议开启，避免数据被清理'}
+              <IconDownload className="h-3.5 w-3.5" />
+              导出
+            </button>
+          }
+        />
+        <Band
+          label="导入数据"
+          kicker="JSON · 覆盖当前"
+          action={
+            <button
+              type="button"
+              className="flex items-center gap-1.5 border border-hairline px-3 py-1.5 text-[13px] text-fg-soft hover:bg-well"
+              style={{ borderRadius: 'var(--c-radius-sm)' }}
+              onClick={() => jsonInputRef.current?.click()}
             >
-              <button
-                type="button"
-                className="btn btn-ghost"
-                disabled={storage?.persisted}
-                onClick={() => void requestPersist()}
-              >
-                {storage?.persisted ? '已开启' : '申请'}
-              </button>
-            </Row>
-          </div>
-        </section>
+              <IconUpload className="h-3.5 w-3.5" />
+              导入
+            </button>
+          }
+        />
+        <Band
+          label="导出录音"
+          kicker="ZIP · 按篇目打包"
+          action={<ActKey label="导出" onPress={() => void exportAudio()} />}
+        />
+        <Band
+          label="导入录音"
+          kicker="ZIP · 先导数据"
+          action={<ActKey label="导入" onPress={() => zipInputRef.current?.click()} />}
+        />
+        <Band
+          label="持久化存储"
+          kicker="PERSISTED"
+          hint={storage?.persisted ? '浏览器不会自动清理' : '建议开启，避免数据被清理'}
+          control={
+            <LampKey
+              on={!!storage?.persisted}
+              onLabel="ON"
+              offLabel="申请"
+              onPress={() => void requestPersist()}
+            />
+          }
+        />
 
-        <section className="card px-4 py-1.5">
-          <h2 className="pt-3 font-song text-base text-ink">装到手机上</h2>
-          <ol className="list-decimal space-y-1.5 py-3 pl-5 text-sm leading-relaxed text-ink-soft">
+        <GroupLabel>装到手机上 INSTALL</GroupLabel>
+        <Band
+          label="添加到主屏幕"
+          kicker="ADD TO HOME SCREEN"
+          value="3 步"
+          tone="dim"
+          open={openBand === 'install'}
+          onToggle={() => toggleBand('install')}
+        >
+          <ol className="list-decimal space-y-1.5 pl-5 text-[13px] leading-relaxed text-fg-soft">
             <li>用 iPhone 的 Safari 打开本站地址</li>
             <li>点底部的「分享」按钮</li>
             <li>选择「添加到主屏幕」，之后就像 App 一样全屏打开</li>
           </ol>
-          <p className="meta pb-3">
-            未添加到主屏时，iOS 可能在长期不用后清理本地数据，请务必添加到主屏并定期导出备份。
+          <p className="mt-2 text-[13px] leading-relaxed text-dim">
+            未添加到主屏时，iOS 可能在长期不用后清理本地数据。请务必添加到主屏，并定期导出备份。
           </p>
-        </section>
+        </Band>
 
-        <section className="card px-4 py-1.5">
-          <h2 className="pt-3 font-song text-base text-ink">危险操作</h2>
-          <Row title="清空全部数据" hint="删除所有篇目、录音与复习记录">
-            <button
-              type="button"
-              className="btn btn-danger"
-              onClick={() => {
+        <GroupLabel>危险 IRREVERSIBLE</GroupLabel>
+        <Band
+          label="清空全部数据"
+          kicker="IRREVERSIBLE"
+          hint="删除所有篇目、录音与复习记录"
+          danger
+          action={
+            <ActKey
+              label="清空"
+              tone="alert"
+              onPress={() => {
                 setClearWord('')
                 setConfirmClear(true)
               }}
-            >
-              <IconTrash className="h-4 w-4" />
-              清空
-            </button>
-          </Row>
-          <div className="pb-3" />
-        </section>
+            />
+          }
+        />
 
-        <p className="pb-4 text-center text-[11px] leading-relaxed text-ink-faint">
-          所有数据都存在这台设备的浏览器里，不上传服务器。
+        <p className="pb-2 pt-3 text-center text-[13px] leading-relaxed text-dim">
+          数据只存在这台设备的浏览器里，不上传服务器。
           <br />
-          换手机时请先导出数据与录音，再在新设备导入。
+          换手机时先导出数据与录音，再在新设备导入。
         </p>
       </div>
 

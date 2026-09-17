@@ -70,7 +70,11 @@ export default function ImportPage() {
 
   const setAll = (recite: boolean) => setLines(lines.map((l) => ({ ...l, recite })))
 
-  const canSubmit = title.trim().length > 0 && lines.length > 0 && !saving
+  // 按钮不能只是「变暗」——要说清楚缺什么，以及缺了怎么补
+  const missingTitle = title.trim().length === 0
+  const missingText = lines.length === 0
+  const blockedReason = missingTitle ? '请先填篇名' : missingText ? '请先粘贴原文' : null
+  const canSubmit = !blockedReason && !saving
 
   const handleSubmit = async () => {
     if (!canSubmit) return
@@ -250,8 +254,15 @@ export default function ImportPage() {
             disabled={!canSubmit}
             onClick={() => void handleSubmit()}
           >
-            {saving ? '正在导入…' : `确认导入${lines.length ? `（${lines.length} 段）` : ''}`}
+            {saving
+              ? '正在导入…'
+              : (blockedReason ?? `确认导入（${lines.length} 段）`)}
           </button>
+          {blockedReason ? (
+            <p className="mt-2 text-center text-[13px] text-dim">
+              {missingTitle ? '导入需要先给这一篇起个名字（上方「篇名」）。' : '把要背的文本粘贴到上面的方框里，一行就是一段。'}
+            </p>
+          ) : null}
         </div>
       </div>
     </>

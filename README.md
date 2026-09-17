@@ -51,9 +51,21 @@ Vite 6 · React 18 · TypeScript · Tailwind CSS 3 · Zustand · Dexie（Indexed
 npm install
 npm run dev        # 本地开发
 npm run test       # 62 项纯函数单测（Vitest）
+npm run e2e        # 9 条端到端回归（Playwright + 本机 Chrome，端口 5173）
 npm run build      # 生产构建（含 Service Worker）
 npm run preview    # 预览构建产物
 npm run icons      # 重新生成 PWA 图标
+
+### 端到端回归覆盖什么
+
+`e2e/flow.spec.ts` 走真实交互路径，不用内部 API 造数据：
+
+- **闭环**：粘贴导入 → 逐段取消「要背」→ 今日读数板（`DONE / DUE` + 预计用时）→ 长按进入背诵态 → 点亮原文（校验 ruby 注音）→ 四档评分 → 自动打卡
+- **跳过**：跳过只换卡、不写排期，计数不变
+- **篇目页**：单卡、前后翻篇写进 `?work=` 深链、刷新后仍是同一篇、「篇目」抽屉可跳转；段落行常态只留四个操作键，删除与重置在编辑面板里
+- **设置页**：导视带右列就是当前值；展开后能改；改完刷新仍在（写进 IndexedDB）
+
+`e2e/layout.spec.ts` 把点名过的版式约定钉成断言：长按键贴底栏且比条目矮、四把评分键钉在底栏上方且完整可见、长原文只保留一个滚动手势且滚到底不被键挡住、390 与 1440 都不横向溢出。
 ```
 
 ## 部署

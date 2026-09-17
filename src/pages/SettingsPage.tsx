@@ -15,11 +15,14 @@ const APP_VERSION = '0.1.0'
 
 /** 状态灯键：开＝段点亮成绿，关＝熄灭 */
 function LampKey({
+  name,
   on,
   onLabel,
   offLabel,
   onPress,
 }: {
+  /** 无障碍名：状态灯的读法应该是「篇目页显示拼音，已开启」 */
+  name: string
   on: boolean
   onLabel: string
   offLabel: string
@@ -28,6 +31,7 @@ function LampKey({
   return (
     <button
       type="button"
+      aria-label={name}
       aria-pressed={on}
       onClick={onPress}
       className={`flex items-center gap-2 border px-2.5 py-1.5 ${
@@ -207,6 +211,7 @@ export default function SettingsPage() {
           label="篇目页显示拼音"
           control={
             <LampKey
+              name="篇目页显示拼音"
               on={settings.pinyinVisible}
               onLabel="ON"
               offLabel="OFF"
@@ -218,6 +223,7 @@ export default function SettingsPage() {
           label="复习时带拼音"
           control={
             <LampKey
+              name="复习时带拼音"
               on={settings.pinyinInReview}
               onLabel="ON"
               offLabel="OFF"
@@ -229,6 +235,7 @@ export default function SettingsPage() {
           label="竖排显示正文"
           control={
             <LampKey
+              name="竖排显示正文"
               on={settings.vertical}
               onLabel="ON"
               offLabel="OFF"
@@ -327,6 +334,7 @@ export default function SettingsPage() {
           hint={storage?.persisted ? '浏览器不会自动清理' : '建议开启，避免数据被清理'}
           control={
             <LampKey
+              name="持久化存储"
               on={!!storage?.persisted}
               onLabel="ON"
               offLabel="申请"

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
-import { IconCheck, IconClose } from '../components/Icons'
+import { IconClose } from '../components/Icons'
 import { useAppStore } from '../store/useAppStore'
 import { splitPassages } from '../lib/split'
 import { newId } from '../lib/id'
@@ -162,7 +162,7 @@ export default function ImportPage() {
           </label>
           <textarea
             id="raw-text"
-            className="field min-h-[180px] font-song text-[16px] leading-7"
+            className="field min-h-[180px] font-song text-[17px] leading-7"
             placeholder={'子曰：学而时习之，不亦说乎？\n有朋自远方来，不亦乐乎？'}
             value={raw}
             onChange={(e) => syncFromRaw(e.target.value)}
@@ -200,20 +200,22 @@ export default function ImportPage() {
                     <button
                       type="button"
                       aria-label={line.recite ? '取消背诵' : '设为要背'}
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--c-radius-sm)] border ${
-                        line.recite
-                          ? 'border-jade bg-jade text-paper-soft'
-                          : 'border-paper-line text-ink-faint'
+                      aria-pressed={line.recite}
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--c-radius-sm)] border bg-panel ${
+                        line.recite ? 'border-lit/60' : 'border-paper-line'
                       }`}
                       onClick={() => toggleRecite(index)}
                     >
-                      {line.recite ? <IconCheck className="h-3.5 w-3.5" /> : null}
+                      <span className="segbar w-3">
+                        <i className={`seg ${line.recite ? 'seg-lit' : ''}`} />
+                        <i className={`seg ${line.recite ? 'seg-lit' : ''}`} />
+                      </span>
                     </button>
                     <span className="w-6 shrink-0 text-center text-xs tabular-nums text-ink-faint">
                       {index + 1}
                     </span>
                     <input
-                      className="min-w-0 flex-1 border-0 bg-transparent p-0 font-song text-[16px] leading-6 text-ink outline-none"
+                      className="min-w-0 flex-1 border-0 bg-transparent p-0 font-song text-[17px] leading-6 text-ink outline-none"
                       value={line.text}
                       onChange={(e) => editLine(index, e.target.value)}
                     />

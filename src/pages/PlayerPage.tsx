@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
+import SegmentDigit, { type SegmentState } from '../components/SegmentDigit'
 import {
   IconChevron,
   IconNext,
@@ -17,6 +18,25 @@ import type { PlayMode } from '../types'
 
 const RATES = [0.5, 0.75, 1, 1.25, 1.5]
 const REPEATS = [1, 2, 3, 5]
+
+/** 走带时间用八段字形读数，冒号保持等宽文字 */
+function SegmentTime({
+  text,
+  state = 'lit',
+  height = 15,
+}: {
+  text: string
+  state?: SegmentState
+  height?: number
+}) {
+  return (
+    <span className="flex items-end gap-[1px]">
+      {text.split('').map((char, index) => (
+        <SegmentDigit key={`${char}-${index}`} char={char} state={state} height={height} />
+      ))}
+    </span>
+  )
+}
 
 export default function PlayerPage() {
   const { workId } = useParams()
@@ -208,11 +228,13 @@ function PlayerBar({ label }: { label: string }) {
 
   return (
     <div className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] z-30 px-3">
-      <div className="rounded-[var(--c-radius)] border border-paper-line bg-paper-soft/97 px-3.5 pb-2.5 pt-3 shadow-paper backdrop-blur">
+        <div className="rounded-[var(--c-radius)] border border-paper-line bg-paper-soft px-3.5 pb-2.5 pt-3">
         <div className="flex items-baseline justify-between gap-2">
           <p className="truncate font-song text-sm text-ink">{label}</p>
-          <span className="shrink-0 text-[11px] tabular-nums text-ink-faint">
-            {formatDuration(currentTime * 1000)} / {formatDuration(duration * 1000)}
+          <span className="flex shrink-0 items-center gap-1" aria-hidden="true">
+            <SegmentTime text={formatDuration(currentTime * 1000)} />
+            <span className="readout text-[11px] text-ink-faint">/</span>
+            <SegmentTime text={formatDuration(duration * 1000)} state="dim" />
           </span>
         </div>
 

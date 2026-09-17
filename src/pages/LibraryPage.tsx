@@ -557,7 +557,7 @@ function PassageRow({
         <div className="min-w-0 flex-1">
           {editing ? (
             <textarea
-              className="field min-h-[92px] font-song text-[16px] leading-7"
+              className="field min-h-[92px] font-song text-[17px] leading-7"
               value={draftText}
               onChange={(e) => setDraftText(e.target.value)}
             />
@@ -606,7 +606,7 @@ function PassageRow({
           <div>
             <label className="label">注释</label>
             <textarea
-              className="field min-h-[68px] text-[14px] leading-6"
+              className="field min-h-[68px] text-[15px] leading-6"
               placeholder="写下字词解释、背景或自己的理解"
               value={draftNote}
               onChange={(e) => setDraftNote(e.target.value)}
@@ -838,7 +838,7 @@ function WorkTextEditor({ open, work, items, onClose, onSave }: WorkTextEditorPr
         }
       >
         <textarea
-          className="field min-h-[52vh] font-song text-[16px] leading-8"
+          className="field min-h-[52vh] font-song text-[17px] leading-8"
           value={text}
           onChange={(e) => setText(e.target.value)}
         />

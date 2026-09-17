@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import RubyText from '../components/RubyText'
 import StatsPanel from '../components/StatsPanel'
+import SegmentDigit from '../components/SegmentDigit'
 import { IconChart, IconEye, IconEyeOff } from '../components/Icons'
 import { useAppStore } from '../store/useAppStore'
 import { usePlayerStore } from '../store/player'
@@ -272,30 +273,40 @@ export default function ReviewPage() {
           <>
             {/* 读数区：已完成/到期 + 预计用时 */}
             <section className="panel mb-3 px-4 py-3.5">
+              <p className="sr-only">
+                今日需背 {sessionTotal} 段，已完成 {doneCount} 段，预计还需 {remainingMinutes} 分钟
+              </p>
               <div className="flex items-end justify-between gap-4">
                 <div>
-                  <div className="flex items-baseline">
-                    <span className="readout text-lit text-[54px] leading-none">
-                      {doneCount}
-                    </span>
-                    <span className="readout text-ghost text-[54px] leading-none">
-                      /{sessionTotal}
-                    </span>
+                  <div className="flex items-end gap-1">
+                    {String(doneCount)
+                      .split('')
+                      .map((char, index) => (
+                        <SegmentDigit key={`done-${index}`} char={char} state="lit" height={54} />
+                      ))}
+                    <SegmentDigit char="/" state="dim" height={54} />
+                    {String(sessionTotal)
+                      .split('')
+                      .map((char, index) => (
+                        <SegmentDigit key={`due-${index}`} char={char} state="dim" height={54} />
+                      ))}
                   </div>
-                  <p className="mt-1.5 text-[10px] tracking-[0.24em] text-dim">DONE / DUE</p>
+                  <p className="mt-2 text-[10px] tracking-[0.24em] text-dim">DONE / DUE</p>
                 </div>
                 <div className="text-right">
-                  <div className="flex items-baseline justify-end gap-1">
-                    <span className="readout text-[13px] text-dim">≈</span>
-                    <span className="readout text-[44px] leading-none">
-                      <span className={minuteHeadIsGhost ? 'text-ghost' : 'text-fg'}>
-                        {minuteDigits.slice(0, 1)}
-                      </span>
-                      <span className="text-fg">{minuteDigits.slice(1)}</span>
-                    </span>
-                    <span className="readout text-[12px] tracking-[0.16em] text-dim">MIN</span>
+                  <div className="flex items-end justify-end gap-1">
+                    <span className="readout pb-1 text-[13px] text-dim">≈</span>
+                    {minuteDigits.split('').map((char, index) => (
+                      <SegmentDigit
+                        key={`min-${index}`}
+                        char={char}
+                        state={index === 0 && minuteHeadIsGhost ? 'ghost' : 'lit'}
+                        height={42}
+                      />
+                    ))}
+                    <span className="readout pb-1 text-[13px] tracking-[0.16em] text-dim">MIN</span>
                   </div>
-                  <p className="mt-1.5 text-[10px] tracking-[0.24em] text-dim">
+                  <p className="mt-2 text-[10px] tracking-[0.24em] text-dim">
                     {checkedIn ? '已打卡 · EST' : '预计用时 · EST'}
                   </p>
                 </div>
@@ -385,7 +396,7 @@ export default function ReviewPage() {
                         <span className="text-[15px] tracking-[0.18em] text-fg">
                           {activeQueue.length ? '长按开始背诵' : '今日已全部完成'}
                         </span>
-                        <span className="text-[9px] tracking-[0.22em] text-dim">
+                        <span className="text-[10px] tracking-[0.22em] text-dim">
                           HOLD {HOLD_MS}MS
                         </span>
                       </span>
@@ -402,7 +413,7 @@ export default function ReviewPage() {
                         <span className="truncate text-[17px] text-fg">
                           {currentWork?.title ?? '未命名'}
                         </span>
-                        <span className="readout shrink-0 text-[12px] text-dim">
+                        <span className="readout shrink-0 text-[13px] text-dim">
                           第 {current.order + 1} 段 · 约{' '}
                           {Math.max(
                             estimateMinutes(
@@ -593,13 +604,13 @@ function CompletionBoard({
 }) {
   return (
     <div className="panel px-5 py-8 text-center">
-      <div className="readout text-done text-[44px] leading-none">
+      <div className="readout text-done text-[42px] leading-none">
         {sessionTotal}/{sessionTotal}
       </div>
       <p className="mt-3 text-[17px] text-fg">
         {sessionTotal === 0 ? '今日无到期的卡片' : '今日任务已完成'}
       </p>
-      <p className="mt-2 text-[12px] tracking-[0.16em] text-dim">
+      <p className="mt-2 text-[13px] tracking-[0.16em] text-dim">
         {checkedIn ? '已打卡 · CHECKED IN' : '尚未打卡'}
       </p>
       {nextBatch ? (

@@ -97,7 +97,7 @@
   }
 
   .field {
-    @apply w-full border border-paper-line bg-paper-soft px-3 py-2 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-pale focus:border-ink-pale;
+    @apply w-full border border-paper-line bg-paper-soft px-3 py-2 text-[17px] text-ink outline-none transition-colors placeholder:text-ink-pale focus:border-ink-pale;
     border-radius: var(--c-radius-sm);
   }
 
@@ -249,7 +249,7 @@
 }
 
 .ruby-text rt {
-  font-family: theme('fontFamily.ui');
+  font-family: var(--c-font-body);
   font-size: 0.44em;
   color: rgb(var(--c-ink-faint));
   letter-spacing: 0;

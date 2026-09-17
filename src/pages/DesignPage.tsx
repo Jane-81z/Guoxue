@@ -35,7 +35,7 @@ export default function DesignPage() {
       />
       <div className="mx-auto max-w-2xl space-y-4 px-4 py-4">
         <section className="panel px-4 py-4">
-          <h2 className="text-[19px] text-fg">{world.name}</h2>
+          <h2 className="text-[20px] text-fg">{world.name}</h2>
           <p className="mt-1 text-[13px] text-dim">{world.tagline}</p>
           <p className="mt-3 text-[13px] leading-relaxed text-fg-soft">{world.description}</p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -62,7 +62,7 @@ export default function DesignPage() {
           </p>
           <ul className="mt-3 space-y-2">
             {KEPT_DISCIPLINES.map((item) => (
-              <li key={item.from} className="flex gap-2 text-[12px] leading-relaxed text-dim">
+              <li key={item.from} className="flex gap-2 text-[13px] leading-relaxed text-dim">
                 <span className="shrink-0 text-fg-soft">{item.from}</span>
                 <span>{item.line}</span>
               </li>

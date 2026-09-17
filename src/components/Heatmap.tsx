@@ -78,7 +78,7 @@ export default function Heatmap({ dailyStats, weeks = 26 }: HeatmapProps) {
             {columns.map((_, index) => {
               const label = monthLabels.find((m) => m.index === index)
               return (
-                <span key={index} className="w-3.5 text-[9px] leading-3 text-ink-faint">
+                <span key={index} className="w-3.5 text-[10px] leading-3 text-ink-faint">
                   {label?.text ?? ''}
                 </span>
               )

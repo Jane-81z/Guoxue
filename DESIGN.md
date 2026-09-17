@@ -23,18 +23,60 @@ typography:
     fontWeight: 400
     lineHeight: 1
     letterSpacing: "0"
+  readout:
+    fontFamily: '"SF Mono", "JetBrains Mono", Consolas, ui-monospace, monospace'
+    fontSize: "42px"
+    fontWeight: 400
+    lineHeight: 1
+    letterSpacing: "0"
+  stat:
+    fontFamily: '"SF Mono", "JetBrains Mono", Consolas, ui-monospace, monospace'
+    fontSize: "24px"
+    fontWeight: 400
+    lineHeight: 1.1
+    letterSpacing: "0"
+  headline:
+    fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
+    fontSize: "20px"
+    fontWeight: 400
+    lineHeight: 1.2
+    letterSpacing: "0.01em"
   body:
     fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
     fontSize: "17px"
     fontWeight: 400
     lineHeight: 1.9
     letterSpacing: "0.02em"
+  title-sm:
+    fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: 1.4
+    letterSpacing: "0.02em"
+  meta:
+    fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: "0.02em"
   label:
+    fontFamily: '"SF Mono", "JetBrains Mono", Consolas, ui-monospace, monospace'
+    fontSize: "11px"
+    fontWeight: 400
+    lineHeight: 1.2
+    letterSpacing: "0.2em"
+  micro:
     fontFamily: '"SF Mono", "JetBrains Mono", Consolas, ui-monospace, monospace'
     fontSize: "10px"
     fontWeight: 400
     lineHeight: 1.2
-    letterSpacing: "0.2em"
+    letterSpacing: "0.24em"
+  input:
+    fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: 1.4
+    letterSpacing: "0.01em"
 rounded:
   instrument: "2px"
   segment: "1px"
@@ -137,11 +179,18 @@ components:
 
 ### Hierarchy
 
-- **Display** (400, 44–54px, 1): 今日进度、剩余分钟、完成读数。只在比例读数与关键格子标题使用。
-- **Headline** (400, 19–20px, 1.2): 页面标题、篇名、全屏面板标题。
-- **Title** (400, 15–17px, 1.3): 格子标题、段落正文、主要操作标签。
-- **Body** (400, 17px, 1.9): 导入原文、篇目正文、复习原文。正文行宽控制在 65–75ch；移动端由容器决定。
-- **Label** (400, 9–11px, 0.16–0.24em): 读数说明、段号、状态标签与英文仪表字。
+只有九个台阶，不再有 1px 一跳的中间档（`scripts/dev/normalize-type-ramp.mjs` 做过一次归一）。
+
+- **Display** (400, 54px, 1): 八段字形的身高，用于今日进度与剩余分钟这类主读数。
+- **Readout** (400, 42px, 1): 次级读数；走带时间用小号版本按同一比例缩放。
+- **Stat** (400, 24px, 1.1): 统计面板的数字。
+- **Headline** (400, 20px, 1.2): 页面标题、全屏面板标题。
+- **Body / Title** (400, 17px, 1.9): 格子标题、段落正文、复习原文、主要操作标签。正文行宽 65–75ch，移动端由容器决定。
+- **Title-sm** (400, 15px, 1.4): 次级操作标签、篇目卡片里的次要行。
+- **Meta** (400, 13px, 1.5): 段数、预计分钟、逾期天数、注释。
+- **Label** (400, 11px, 0.16–0.24em): 段号、状态标签与英文仪表字。
+- **Micro** (400, 10px, 0.24em): 读数下方的单位说明（DONE / DUE、MIN、HOLD 450MS）。
+- **Input** (400, 16px, 1.4): 输入与文本域的地板字号，移动端聚焦不放大。
 
 ### Named Rules
 
@@ -213,6 +262,12 @@ components:
 ### Segment Bar
 
 Three stacked 4px segments. Lit, done, alert and unlit are four distinct states; the unlit state is a designed ghost rather than an empty space.
+
+它同时是「要背／不背」这类开关的状态语言——不用对勾徽章（见 No Badge Rule）。
+
+### Segment Digit
+
+`src/components/SegmentDigit.tsx`：真正的七段掩码字形，每段是一个带 `clip-path` 的块，宽度按高度的 0.56 推出。五种状态：`lit`（发光段红 + 外发光）、`dim`（亮但不在当前，用于仍需读出的数字，如到期总数）、`ghost`（真正未点亮、只留轮廓，如个位数分钟的前导 0）、`done`（绿）、`alert`（琥珀）。非数字字符（`/`、`≈`、`:`）退回等宽文字，保持同一高度与字重。字形对辅助技术隐藏，读数同时在 `sr-only` 文本里给出完整句子。
 
 ### Hold Key
 

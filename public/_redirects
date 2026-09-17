@@ -1,0 +1,4 @@
+# Cloudflare Pages / Netlify 的单页应用回落：
+# 找不到静态文件时返回 index.html（否则刷新 /review、/library 会 404）。
+# Vercel 用 vercel.json 里的 rewrites，同名文件在那边不生效，但也不冲突。
+/*    /index.html   200

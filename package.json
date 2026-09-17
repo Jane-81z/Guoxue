@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "description": "国学文字背诵 App（PWA）",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

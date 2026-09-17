@@ -1,0 +1,10 @@
+# 统一换行，避免 Windows 上产生整文件 diff
+* text=auto eol=lf
+
+# 二进制资产不做文本处理
+*.png binary
+*.webp binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

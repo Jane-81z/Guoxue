@@ -1,0 +1,326 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* 世界「日课刻度」的兜底值；实际值由 src/theme/themes.ts 在运行时写入 */
+  :root {
+    --c-ground: 11 13 16;
+    --c-panel: 16 19 23;
+    --c-well: 8 9 11;
+    --c-hairline: 35 38 43;
+    --c-fg: 226 220 208;
+    --c-fg-soft: 186 179 166;
+    --c-dim: 146 138 126;
+    --c-ghost: 132 124 112;
+    --c-lit: 255 46 31;
+    --c-lit-soft: 255 110 92;
+    --c-lit-ghost: 58 27 24;
+    --c-done: 52 208 122;
+    --c-done-ghost: 30 62 45;
+    --c-alert: 255 176 32;
+    --c-paper: 11 13 16;
+    --c-paper-soft: 16 19 23;
+    --c-paper-deep: 8 9 11;
+    --c-paper-line: 35 38 43;
+    --c-ink: 226 220 208;
+    --c-ink-soft: 186 179 166;
+    --c-ink-faint: 146 138 126;
+    --c-ink-pale: 132 124 112;
+    --c-accent: 255 46 31;
+    --c-accent-soft: 255 110 92;
+    --c-accent-pale: 58 27 24;
+    --c-jade: 52 208 122;
+    --c-jade-pale: 30 62 45;
+    --c-radius: 2px;
+    --c-radius-sm: 2px;
+    --c-font-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+      "Microsoft YaHei", sans-serif;
+    --c-font-digit: "SF Mono", "JetBrains Mono", Consolas, "Liberation Mono", ui-monospace, monospace;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    background: rgb(var(--c-ground));
+  }
+
+  body {
+    @apply bg-paper text-ink font-ui antialiased;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+    caret-color: rgb(var(--c-lit));
+  }
+
+  /* 16px 以上可避免 iOS 聚焦时自动放大 */
+  input,
+  textarea,
+  select,
+  button {
+    font-size: 16px;
+    font-family: inherit;
+  }
+
+  ::selection {
+    /* 选中就是「点亮」：发光段红作底、地面色作字，暗底上才看得见 */
+    background: rgb(var(--c-lit));
+    color: rgb(var(--c-ground));
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-lit) / 0.72);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .card {
+    /* 只声明一次抬升：这个世界用 1px 发丝线，不用软阴影 */
+    @apply border border-paper-line bg-paper-soft;
+    border-radius: var(--c-radius);
+  }
+
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-1.5 px-3 py-2 text-sm transition-colors duration-150 disabled:opacity-40;
+    border-radius: var(--c-radius-sm);
+  }
+
+  .btn-primary {
+    @apply bg-ink text-paper-soft hover:bg-ink-soft;
+  }
+
+  .btn-ghost {
+    @apply border border-paper-line bg-paper-soft text-ink-soft hover:bg-paper-deep;
+  }
+
+  .btn-danger {
+    @apply border border-cinnabar/35 text-cinnabar hover:bg-cinnabar/5;
+  }
+
+  .field {
+    @apply w-full border border-paper-line bg-paper-soft px-3 py-2 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-pale focus:border-ink-pale;
+    border-radius: var(--c-radius-sm);
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs tracking-wide text-ink-faint;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 border border-paper-line bg-paper-soft px-3 py-1 text-xs text-ink-soft transition-colors;
+    border-radius: var(--c-radius-sm);
+  }
+
+  .chip-active {
+    @apply border-ink bg-ink text-paper-soft;
+  }
+
+  .meta {
+    @apply text-xs text-ink-faint;
+  }
+
+  .divider {
+    @apply h-px w-full bg-paper-line;
+  }
+
+  /* ——— 这个世界自己的基元：面板、读数、段码、格子、长按键 ——— */
+
+  .panel {
+    @apply border border-hairline bg-panel;
+    border-radius: var(--c-radius);
+  }
+
+  .readout {
+    font-family: var(--c-font-digit);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+
+  .cellrow {
+    @apply flex items-center gap-3 border border-hairline bg-panel px-3.5 py-3;
+    border-radius: var(--c-radius);
+  }
+
+  .cellrow-current {
+    border-color: rgb(var(--c-lit) / 0.55);
+  }
+
+  .cellrow-alert {
+    border-color: rgb(var(--c-alert) / 0.45);
+  }
+
+  .cellrow-finished {
+    border-color: rgb(var(--c-done) / 0.35);
+    background: rgb(var(--c-done-ghost) / 0.24);
+  }
+
+  .cellrow:disabled {
+    cursor: default;
+  }
+
+  .segbar {
+    @apply flex w-6 flex-col gap-[3px];
+  }
+
+  .seg {
+    display: block;
+    height: 4px;
+    border-radius: 1px;
+    background: rgb(var(--c-lit-ghost));
+  }
+
+  .seg-lit {
+    background: rgb(var(--c-lit));
+    box-shadow: 0 0 8px rgb(var(--c-lit) / 0.55);
+  }
+
+  .seg-done {
+    background: rgb(var(--c-done));
+    box-shadow: 0 0 8px rgb(var(--c-done) / 0.45);
+  }
+
+  .seg-alert {
+    background: rgb(var(--c-alert));
+  }
+
+  .holdkey {
+    @apply relative w-full overflow-hidden border border-hairline bg-panel py-3 text-center;
+    border-radius: var(--c-radius);
+    touch-action: none;
+  }
+
+  .holdkey-fill {
+    @apply pointer-events-none absolute inset-y-0 left-0;
+    background: rgb(var(--c-lit) / 0.16);
+  }
+
+  .keypad {
+    @apply flex flex-col items-start gap-0.5 border border-hairline bg-panel px-3.5 py-3 text-left;
+    border-radius: var(--c-radius);
+    transition: background-color 90ms linear;
+  }
+
+  .keypad:active {
+    background: rgb(var(--c-well));
+  }
+
+  .keypad:hover {
+    background: rgb(var(--c-well));
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+}
+
+/* ——— 正文与注音 ——— */
+
+.text-body {
+  font-family: var(--c-font-body, theme('fontFamily.song'));
+  font-size: calc(17px * var(--body-font-scale, 1));
+  line-height: var(--body-line-height, 2.1);
+  letter-spacing: 0.02em;
+}
+
+.text-digit {
+  font-family: var(--c-font-digit);
+  font-variant-numeric: tabular-nums;
+}
+
+.ruby-text {
+  line-height: var(--body-line-height, 2.1);
+}
+
+.ruby-text ruby {
+  ruby-align: center;
+}
+
+.ruby-text rt {
+  font-family: theme('fontFamily.ui');
+  font-size: 0.44em;
+  color: rgb(var(--c-ink-faint));
+  letter-spacing: 0;
+}
+
+.text-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 0.12em;
+}
+
+.text-vertical .ruby-text {
+  line-height: 1;
+}
+
+/* ——— 动效 ——— */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 未设定的闹钟在闪：逾期用同一个动作，而不是换一种颜色 */
+@keyframes seg-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.28;
+  }
+}
+
+.blink-alert {
+  animation: seg-blink 1.6s steps(1, end) infinite;
+  color: rgb(var(--c-alert));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blink-alert {
+    animation: none;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.18s ease-out both;
+}
+
+.animate-rise-in {
+  animation: rise-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-rise-in {
+    animation: none;
+  }
+}

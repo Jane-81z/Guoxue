@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>方向示意 · 今日复习</title>
+    <style>
+      :root {
+        --w: 390px;
+        --h: 844px;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { background: #f2f2f0; }
+      body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+
+      .phone {
+        display: none;
+        width: var(--w);
+        height: var(--h);
+        position: relative;
+        overflow: hidden;
+      }
+      body[data-d="assigned"] #d-assigned,
+      body[data-d="model-pick"] #d-model-pick,
+      body[data-d="seven-segment"] #d-seven-segment,
+      body[data-d="hypercard"] #d-hypercard,
+      body[data-d="canon"] #d-canon { display: block; }
+      body[data-d="all"] .phone { display: block; margin: 12px; float: left; }
+
+      .demo-label {
+        position: absolute;
+        right: 6px;
+        bottom: 4px;
+        font-size: 9px;
+        letter-spacing: 0.08em;
+        opacity: 0.55;
+        z-index: 50;
+      }
+
+      /* ============ A. 刻本一叶 ============ */
+      #d-assigned {
+        background: #ddd6c2;
+        background-image: repeating-linear-gradient(
+          90deg,
+          rgba(138, 130, 114, 0.10) 0 1px,
+          transparent 1px 3px
+        );
+        color: #1a1a1c;
+        padding: 18px 16px 20px;
+      }
+      #d-assigned .frame {
+        border: 2.5px solid #1a1a1c;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: rgba(255, 255, 255, 0.18);
+      }
+      #d-assigned .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 10px;
+        border-bottom: 1.5px solid #1a1a1c;
+        font-family: "Songti SC", "STSong", SimSun, serif;
+      }
+      #d-assigned .head b { font-size: 17px; letter-spacing: 0.34em; font-weight: 600; }
+      #d-assigned .head span { font-size: 11px; letter-spacing: 0.12em; }
+      #d-assigned .body { flex: 1; display: flex; padding: 12px 8px 10px; }
+      #d-assigned .col {
+        writing-mode: vertical-rl;
+        text-orientation: upright;
+        font-family: "Songti SC", "STSong", SimSun, serif;
+        border-left: 1px solid rgba(26, 26, 28, 0.75);
+        padding: 4px 9px;
+      }
+      #d-assigned .col:first-child { border-left: none; }
+      #d-assigned .col-main { flex: 1.35; }
+      #d-assigned .col-side { flex: 1; opacity: 0.94; }
+      #d-assigned .kicker { font-size: 12px; letter-spacing: 0.2em; opacity: 0.7; }
+      #d-assigned .title { font-size: 21px; letter-spacing: 0.14em; margin-top: 10px; font-weight: 600; }
+      #d-assigned .verse { font-size: 16px; letter-spacing: 0.1em; margin-top: 12px; line-height: 1.6; }
+      #d-assigned .work {
+        font-size: 15px;
+        letter-spacing: 0.12em;
+        margin-top: 14px;
+        position: relative;
+      }
+      #d-assigned .done {
+        color: #a3160f;
+      }
+      #d-assigned .done::after {
+        content: "";
+        position: absolute;
+        right: -7px;
+        top: 0;
+        bottom: 0;
+        width: 15px;
+        border: 1.6px solid #b5271d;
+        border-radius: 50% 46% 52% 48%;
+        opacity: 0.85;
+      }
+      #d-assigned .todo::after {
+        content: "";
+        position: absolute;
+        right: -4px;
+        top: 45%;
+        width: 6px;
+        height: 6px;
+        background: #b5271d;
+        border-radius: 50%;
+      }
+      #d-assigned .fish {
+        writing-mode: vertical-rl;
+        text-orientation: upright;
+        font-family: "Songti SC", "STSong", SimSun, serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 0;
+      }
+      #d-assigned .fishtail {
+        width: 14px;
+        height: 22px;
+        background: #1a1a1c;
+        clip-path: polygon(0 0, 100% 22%, 50% 50%, 100% 78%, 0 100%);
+      }
+      #d-assigned .count {
+        font-size: 30px;
+        letter-spacing: 0.06em;
+        font-weight: 600;
+      }
+      #d-assigned .count i { font-size: 13px; font-style: normal; opacity: 0.75; }
+      #d-assigned .seal {
+        width: 46px;
+        height: 46px;
+        border: 2px solid #b5271d;
+        border-radius: 3px;
+        color: #b5271d;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Songti SC", "STSong", SimSun, serif;
+        opacity: 0.62;
+      }
+      #d-assigned .foot {
+        border-top: 1.5px solid #1a1a1c;
+        padding: 6px 10px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        font-family: "Songti SC", "STSong", SimSun, serif;
+      }
+
+      /* ============ B. 日课牌 ============ */
+      #d-model-pick {
+        background: #14120f;
+        background-image: repeating-linear-gradient(
+            92deg,
+            rgba(255, 255, 255, 0.028) 0 2px,
+            transparent 2px 7px
+          ),
+          linear-gradient(180deg, #191612, #100e0c);
+        color: #f2ede2;
+        padding: 26px 22px 22px;
+        font-family: "Songti SC", "STSong", SimSun, serif;
+      }
+      #d-model-pick .board-title {
+        font-size: 12px;
+        letter-spacing: 0.42em;
+        opacity: 0.5;
+        margin-bottom: 4px;
+      }
+      #d-model-pick h1 {
+        font-size: 30px;
+        letter-spacing: 0.22em;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      #d-model-pick .rule {
+        height: 1px;
+        background: rgba(242, 237, 226, 0.22);
+        margin: 14px 0 20px;
+      }
+      #d-model-pick .row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px 0;
+        position: relative;
+      }
+      #d-model-pick .row + .row { border-top: 1px dashed rgba(242, 237, 226, 0.14); }
+      #d-model-pick .num { font-size: 13px; opacity: 0.42; width: 18px; }
+      #d-model-pick .name { flex: 1; font-size: 21px; letter-spacing: 0.1em; }
+      #d-model-pick .meta { font-size: 11px; opacity: 0.45; letter-spacing: 0.1em; }
+      #d-model-pick .dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #c0392b;
+        flex: none;
+      }
+      #d-model-pick .row.struck .name { opacity: 0.45; }
+      #d-model-pick .row.struck .strike {
+        position: absolute;
+        left: 26px;
+        right: 34px;
+        top: 50%;
+        height: 3px;
+        background: #c0392b;
+        transform: rotate(-1.4deg);
+        opacity: 0.9;
+      }
+      #d-model-pick .chalk { text-shadow: 0 0 1px rgba(255, 255, 255, 0.5); }
+      #d-model-pick .foot {
+        position: absolute;
+        left: 22px;
+        right: 22px;
+        bottom: 22px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        opacity: 0.5;
+      }
+
+      /* ============ C. 日课刻度 ============ */
+      #d-seven-segment {
+        background: #0b0d10;
+        color: #8c8378;
+        font-family: "Consolas", "SF Mono", monospace;
+        padding: 22px 18px;
+      }
+      #d-seven-segment .readout {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 22px;
+      }
+      #d-seven-segment .digits {
+        font-size: 62px;
+        line-height: 0.94;
+        color: #ff2e1f;
+        letter-spacing: 0.02em;
+        text-shadow: 0 0 22px rgba(255, 46, 31, 0.45);
+        font-weight: 700;
+      }
+      #d-seven-segment .slash { font-size: 34px; color: #4a2320; }
+      #d-seven-segment .ghostdigit {
+        font-size: 62px;
+        line-height: 0.94;
+        color: #2a1a18;
+        font-weight: 700;
+      }
+      #d-seven-segment .unit { font-size: 12px; letter-spacing: 0.24em; margin-left: auto; }
+      #d-seven-segment .cell {
+        border: 1px solid #23262b;
+        background: #101317;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 10px;
+      }
+      #d-seven-segment .cell.done { border-color: #3a1b18; background: #140f0f; }
+      #d-seven-segment .cell-name {
+        flex: 1;
+        font-family: "Songti SC", "STSong", SimSun, serif;
+        font-size: 17px;
+        letter-spacing: 0.08em;
+        color: #cdc4b6;
+      }
+      #d-seven-segment .cell-meta { font-size: 10px; letter-spacing: 0.16em; color: #5f5a52; }
+      #d-seven-segment .segs { display: flex; flex-direction: column; gap: 2px; width: 26px; }
+      #d-seven-segment .seg { height: 4px; background: #2a1a18; border-radius: 1px; }
+      #d-seven-segment .cell.done .seg { background: #ff2e1f; box-shadow: 0 0 8px rgba(255, 46, 31, 0.55); }
+      #d-seven-segment .hold {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 22px;
+        border: 1px solid #2f3339;
+        padding: 13px;
+        text-align: center;
+        font-size: 12px;
+        letter-spacing: 0.3em;
+        color: #d8d2c6;
+        background: #12151a;
+      }
+
+      /* ============ D. 卡片盒 ============ */
+      #d-hypercard {
+        background: #f7f7f4;
+        color: #111;
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+      #d-hypercard .menubar {
+        display: flex;
+        gap: 14px;
+        padding: 6px 10px;
+        border-bottom: 2px solid #111;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+      }
+      #d-hypercard .stack { position: relative; padding: 18px 16px 0; height: calc(100% - 30px); }
+      #d-hypercard .card {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        border: 2.5px solid #111;
+        background: #f7f7f4;
+        background-image: radial-gradient(#c9c9c4 0.6px, transparent 0.7px);
+        background-size: 4px 4px;
+      }
+      #d-hypercard .card.b3 { top: 34px; bottom: 84px; left: 30px; right: 30px; }
+      #d-hypercard .card.b2 { top: 26px; bottom: 74px; left: 23px; right: 23px; }
+      #d-hypercard .card.top {
+        top: 18px;
+        bottom: 66px;
+        padding: 16px 14px;
+        display: flex;
+        flex-direction: column;
+      }
+      #d-hypercard .cardtop {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        border-bottom: 1.5px solid #111;
+        padding-bottom: 8px;
+      }
+      #d-hypercard .cardtop b { font-size: 19px; letter-spacing: 0.1em; }
+      #d-hypercard .cardtop span { font-size: 11px; }
+      #d-hypercard .verse {
+        font-family: "Songti SC", "STSong", SimSun, serif;
+        font-size: 17px;
+        line-height: 1.95;
+        margin-top: 14px;
+        letter-spacing: 0.06em;
+      }
+      #d-hypercard .verse em {
+        font-style: normal;
+        background: #111;
+        color: #f7f7f4;
+        padding: 0 3px;
+      }
+      #d-hypercard .field {
+        margin-top: auto;
+        border-top: 1.5px solid #111;
+        padding-top: 10px;
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+      }
+      #d-hypercard .buttons { position: absolute; left: 16px; right: 16px; bottom: 20px; display: flex; gap: 10px; }
+      #d-hypercard .hbtn {
+        flex: 1;
+        border: 2px solid #111;
+        background: #f7f7f4;
+        padding: 11px;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        box-shadow: 3px 3px 0 #111;
+      }
+      #d-hypercard .hbtn.active { background: #111; color: #f7f7f4; box-shadow: none; }
+
+      /* ============ E. 标准形 ============ */
+      #d-canon {
+        background: #fff;
+        color: #111827;
+      }
+      #d-canon .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px 12px;
+      }
+      #d-canon .bar b { font-size: 19px; letter-spacing: 0.02em; }
+      #d-canon .streak { font-size: 12px; color: #2563eb; font-weight: 600; }
+      #d-canon .ringwrap { display: flex; align-items: center; gap: 16px; padding: 8px 20px 18px; }
+      #d-canon .ring {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        background: conic-gradient(#2563eb 0 40%, #e5e7eb 40% 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+      }
+      #d-canon .ring i {
+        width: 58px;
+        height: 58px;
+        background: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-style: normal;
+        font-size: 15px;
+        font-weight: 700;
+      }
+      #d-canon .ringtxt b { display: block; font-size: 15px; }
+      #d-canon .ringtxt span { font-size: 12px; color: #6b7280; }
+      #d-canon .list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+      #d-canon .item {
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+      }
+      #d-canon .item b { font-size: 15px; }
+      #d-canon .item span { display: block; font-size: 12px; color: #6b7280; margin-top: 2px; }
+      #d-canon .pill {
+        font-size: 11px;
+        border-radius: 999px;
+        padding: 3px 9px;
+        background: #eef2ff;
+        color: #2563eb;
+        font-weight: 600;
+      }
+      #d-canon .pill.done { background: #ecfdf5; color: #059669; }
+      #d-canon .cta {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        bottom: 22px;
+        background: #2563eb;
+        color: #fff;
+        border-radius: 14px;
+        padding: 16px;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body data-d="assigned">
+    <!-- ============ A. 刻本一叶 ============ -->
+    <section class="phone" id="d-assigned">
+      <div class="frame">
+        <div class="head">
+          <b>国学背诵</b>
+          <span>九月十七 · 第三叶</span>
+        </div>
+        <div class="body">
+          <div class="col col-main">
+            <span class="kicker">今日课业</span>
+            <span class="title">学而第一</span>
+            <span class="verse">子曰：学而时习之，不亦说乎？</span>
+            <span class="verse">有朋自远方来，不亦乐乎？</span>
+          </div>
+          <div class="col col-side">
+            <span class="kicker">待背三篇</span>
+            <span class="work done">论语·学而第一</span>
+            <span class="work done">道德经·第一章</span>
+            <span class="work todo">岳阳楼记</span>
+            <span class="kicker" style="margin-top: 16px">旁注</span>
+            <span class="work todo">说　音悦</span>
+          </div>
+          <div class="col" style="flex: 0.62; border-left: 1px solid rgba(26,26,28,0.75)">
+            <div class="fish">
+              <div class="fishtail"></div>
+              <div class="count">2<i>/5</i></div>
+              <div class="seal">印</div>
+            </div>
+          </div>
+        </div>
+        <div class="foot">
+          <span>今日 2/5 段</span>
+          <span>打卡留印</span>
+        </div>
+      </div>
+      <span class="demo-label">示意 · 非最终实现</span>
+    </section>
+
+    <!-- ============ B. 日课牌 ============ -->
+    <section class="phone" id="d-model-pick">
+      <div class="board-title">九月十七 · 周四</div>
+      <h1 class="chalk">今日课业</h1>
+      <div class="rule"></div>
+      <div class="row struck">
+        <span class="num chalk">一</span>
+        <span class="name chalk">论语 · 学而第一</span>
+        <span class="meta">2 段</span>
+        <span class="strike"></span>
+        <span class="dot"></span>
+      </div>
+      <div class="row">
+        <span class="num chalk">二</span>
+        <span class="name chalk">道德经 · 第一章</span>
+        <span class="meta">1 段</span>
+        <span class="dot"></span>
+      </div>
+      <div class="row">
+        <span class="num chalk">三</span>
+        <span class="name chalk">岳阳楼记</span>
+        <span class="meta">2 段</span>
+        <span class="dot"></span>
+      </div>
+      <div class="row">
+        <span class="num chalk">四</span>
+        <span class="name chalk">陋室铭</span>
+        <span class="meta">1 段</span>
+        <span class="dot"></span>
+      </div>
+      <div class="foot">
+        <span>今日 2 / 5 段</span>
+        <span>背完划朱</span>
+      </div>
+      <span class="demo-label">示意 · 非最终实现</span>
+    </section>
+
+    <!-- ============ C. 日课刻度 ============ -->
+    <section class="phone" id="d-seven-segment">
+      <div class="readout">
+        <span class="digits">2</span>
+        <span class="slash">/</span>
+        <span class="ghostdigit">5</span>
+        <span class="unit">DUE / DONE</span>
+      </div>
+      <div class="cell done">
+        <div class="segs"><i class="seg"></i><i class="seg"></i><i class="seg"></i></div>
+        <div>
+          <div class="cell-name">论语 · 学而第一</div>
+          <div class="cell-meta">已背 · 2 段</div>
+        </div>
+      </div>
+      <div class="cell done">
+        <div class="segs"><i class="seg"></i><i class="seg"></i><i class="seg"></i></div>
+        <div>
+          <div class="cell-name">道德经 · 第一章</div>
+          <div class="cell-meta">已背 · 1 段</div>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="segs"><i class="seg"></i><i class="seg"></i><i class="seg"></i></div>
+        <div>
+          <div class="cell-name">岳阳楼记</div>
+          <div class="cell-meta">待背 · 2 段 · 逾期 1 天</div>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="segs"><i class="seg"></i><i class="seg"></i><i class="seg"></i></div>
+        <div>
+          <div class="cell-name">陋室铭</div>
+          <div class="cell-meta">待背 · 1 段</div>
+        </div>
+      </div>
+      <div class="hold">长按开始背诵</div>
+      <span class="demo-label">示意 · 非最终实现</span>
+    </section>
+
+    <!-- ============ D. 卡片盒 ============ -->
+    <section class="phone" id="d-hypercard">
+      <div class="menubar"><span>文件</span><span>篇目</span><span>背诵</span><span>统计</span></div>
+      <div class="stack">
+        <div class="card b3"></div>
+        <div class="card b2"></div>
+        <div class="card top">
+          <div class="cardtop">
+            <b>论语 · 学而第一</b>
+            <span>第 3 段 / 共 5</span>
+          </div>
+          <div class="verse">
+            子曰：学而时习之，<br />
+            不亦说乎？<br />
+            有朋自远方来，不亦乐乎？
+          </div>
+          <div class="field">
+            <span>上次：9月16日 · 流畅</span>
+            <span>下次：今天</span>
+          </div>
+        </div>
+        <div class="buttons">
+          <div class="hbtn active">开始背诵</div>
+          <div class="hbtn">翻到下一篇</div>
+        </div>
+      </div>
+      <span class="demo-label">示意 · 非最终实现</span>
+    </section>
+
+    <!-- ============ E. 标准形 ============ -->
+    <section class="phone" id="d-canon">
+      <div class="bar">
+        <b>今日复习</b>
+        <span class="streak">连续 12 天</span>
+      </div>
+      <div class="ringwrap">
+        <div class="ring"><i>2/5</i></div>
+        <div class="ringtxt">
+          <b>今天还有 3 段</b>
+          <span>预计 6 分钟</span>
+        </div>
+      </div>
+      <div class="list">
+        <div class="item">
+          <div style="flex: 1">
+            <b>论语 · 学而第一</b>
+            <span>2 段 · 已到期</span>
+          </div>
+          <span class="pill">开始</span>
+        </div>
+        <div class="item">
+          <div style="flex: 1">
+            <b>道德经 · 第一章</b>
+            <span>1 段 · 逾期 1 天</span>
+          </div>
+          <span class="pill">开始</span>
+        </div>
+        <div class="item">
+          <div style="flex: 1">
+            <b>岳阳楼记</b>
+            <span>2 段 · 今天</span>
+          </div>
+          <span class="pill done">已完成</span>
+        </div>
+      </div>
+      <div class="cta">开始复习</div>
+      <span class="demo-label">示意 · 非最终实现</span>
+    </section>
+
+    <script>
+      const params = new URLSearchParams(location.search)
+      document.body.dataset.d = params.get('d') || 'assigned'
+    </script>
+  </body>
+</html>

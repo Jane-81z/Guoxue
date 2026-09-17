@@ -1,0 +1,20 @@
+node_modules
+dist
+dist-ssr
+dev-dist
+*.local
+.DS_Store
+test-results
+playwright-report
+.vercel
+*.tsbuildinfo
+
+# 第三方 skill 的 vendored 副本：按 README 的步骤安装，不随仓库分发
+.codex/skills/
+
+# Impeccable 运行期产物（证据类文件仍然入库，见下）
+.impeccable/tmp/
+.impeccable/questions/
+.impeccable/decision/payload.comps.json
+.impeccable/decision/payload.http.json
+.impeccable/decision/payload.textonly.json

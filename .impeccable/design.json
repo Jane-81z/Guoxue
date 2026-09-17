@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-17T14:50:00.000Z",
+  "title": "Design System: 国学背诵",
+  "extensions": {
+    "colorMeta": {
+      "instrument-ground": {
+        "role": "neutral",
+        "displayName": "Instrument Ground",
+        "canonical": "#0B0D10",
+        "tonalRamp": ["#08090B", "#0B0D10", "#101317", "#171B20", "#23262B", "#4A4B4E", "#928A7E", "#E2DCD0"]
+      },
+      "current-segment": {
+        "role": "primary",
+        "displayName": "Current Segment Red",
+        "canonical": "#FF2E1F",
+        "tonalRamp": ["#2A0D09", "#3A1B18", "#64211B", "#8F271E", "#C72E22", "#FF2E1F", "#FF6E5C", "#FFD1CB"]
+      },
+      "complete-segment": {
+        "role": "secondary",
+        "displayName": "Complete Segment Green",
+        "canonical": "#34D07A",
+        "tonalRamp": ["#0D2116", "#143923", "#1E3E2D", "#245D3A", "#2A8F50", "#34D07A", "#7BE2A8", "#D7F7E4"]
+      },
+      "alert-amber": {
+        "role": "tertiary",
+        "displayName": "Alert Amber",
+        "canonical": "#FFB020",
+        "tonalRamp": ["#2A1A06", "#4A2D08", "#7A4A0A", "#A66A0D", "#D18B12", "#FFB020", "#FFD174", "#FFF0C9"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Instrument Readout",
+        "purpose": "Daily progress and remaining-time readouts only."
+      },
+      "body": {
+        "displayName": "Quiet Chinese Body",
+        "purpose": "Original text, notes and imported passages."
+      },
+      "label": {
+        "displayName": "Mono Label",
+        "purpose": "Segment numbers, timestamps and small instrument labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "paper",
+        "value": "0 1px 2px rgba(35,33,30,0.04), 0 8px 24px -16px rgba(35,33,30,0.28)",
+        "purpose": "Temporary elevation for the mini-player, dialog and toast."
+      }
+    ],
+    "motion": [
+      {
+        "name": "out-soft",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Entrance and overlay motion."
+      },
+      {
+        "name": "hold-fill",
+        "value": "40ms interval, 450ms total",
+        "purpose": "The one authored interaction: pressing the hold key to enter recitation."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Confirming an import, save or other non-destructive primary action.",
+      "html": "<button class=\"ds-btn-primary\">保存</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 8px 12px; border: 0; border-radius: var(--c-radius, 2px); background: var(--c-fg); color: var(--c-panel); font: 400 14px/1 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; transition: background-color 150ms ease; } .ds-btn-primary:hover { background: var(--c-fg-soft); } .ds-btn-primary:focus-visible { outline: 2px solid rgb(var(--c-lit) / 0.72); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary and cancel actions that should stay close to the instrument surface.",
+      "html": "<button class=\"ds-btn-ghost\">取消</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 8px 12px; border: 1px solid var(--c-hairline); border-radius: var(--c-radius, 2px); background: var(--c-panel); color: var(--c-fg-soft); font: 400 14px/1 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; transition: background-color 150ms ease, border-color 150ms ease; } .ds-btn-ghost:hover { background: var(--c-well); border-color: var(--c-ghost); } .ds-btn-ghost:focus-visible { outline: 2px solid rgb(var(--c-lit) / 0.72); outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Irreversible deletion and clearing actions.",
+      "html": "<button class=\"ds-btn-danger\">删除</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 8px 12px; border: 1px solid rgb(var(--c-lit) / 0.35); border-radius: var(--c-radius, 2px); background: var(--c-ground); color: var(--c-lit); font: 400 14px/1 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; transition: background-color 150ms ease; } .ds-btn-danger:hover { background: rgb(var(--c-lit) / 0.06); } .ds-btn-danger:focus-visible { outline: 2px solid rgb(var(--c-lit) / 0.72); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Title, notes, search and import fields.",
+      "html": "<input class=\"ds-field\" placeholder=\"如：论语·学而第一\" />",
+      "css": ".ds-field { width: 100%; min-height: 40px; padding: 8px 12px; border: 1px solid var(--c-hairline); border-radius: var(--c-radius-sm, 2px); background: var(--c-panel); color: var(--c-fg); font: 400 16px/1.4 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; outline: none; } .ds-field::placeholder { color: var(--c-ghost); } .ds-field:focus { border-color: var(--c-ghost); } .ds-field:focus-visible { outline: 2px solid rgb(var(--c-lit) / 0.72); outline-offset: 2px; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Filter and inline segment actions.",
+      "html": "<button class=\"ds-chip\">待复习</button>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border: 1px solid var(--c-hairline); border-radius: var(--c-radius-sm, 2px); background: var(--c-panel); color: var(--c-fg-soft); font: 400 12px/1.2 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; } .ds-chip:hover { background: var(--c-well); } .ds-chip[aria-pressed='true'] { background: var(--c-fg); color: var(--c-panel); border-color: var(--c-fg); }"
+    },
+    {
+      "name": "Work Cell",
+      "kind": "card",
+      "refersTo": "cellrow",
+      "description": "One due work in the daily board; the fixed row that never shifts.",
+      "html": "<button class=\"ds-cell\"><span class=\"ds-segbar\"><i class=\"ds-seg ds-seg-done\"></i><i class=\"ds-seg ds-seg-lit\"></i><i class=\"ds-seg\"></i></span><span class=\"ds-cell-copy\"><strong>论语·学而第一</strong><small>1/3 段 · 约 2 分钟</small></span><span class=\"ds-cell-num\">01</span></button>",
+      "css": ".ds-cell { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 1px solid var(--c-hairline); border-radius: var(--c-radius, 2px); background: var(--c-panel); color: var(--c-fg); text-align: left; } .ds-cell:hover { background: var(--c-well); } .ds-cell:focus-visible { outline: 2px solid rgb(var(--c-lit) / 0.72); outline-offset: 2px; } .ds-segbar { display: flex; flex-direction: column; gap: 3px; width: 24px; } .ds-seg { display: block; height: 4px; border-radius: 1px; background: var(--c-lit-ghost); } .ds-seg-lit { background: var(--c-lit); } .ds-seg-done { background: var(--c-done); } .ds-cell-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; } .ds-cell-copy strong { font: 400 17px/1.1 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; } .ds-cell-copy small { color: var(--c-dim); font: 400 11px/1.2 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; } .ds-cell-num { color: var(--c-dim); font: 400 11px/1 'SF Mono', Consolas, monospace; }"
+    },
+    {
+      "name": "Hold Key",
+      "kind": "custom",
+      "description": "The single authored entrance into recitation: press and hold to fill the key.",
+      "html": "<button class=\"ds-holdkey\"><span>长按开始背诵</span><small>HOLD 450MS</small></button>",
+      "css": ".ds-holdkey { position: relative; width: 100%; padding: 12px; border: 1px solid var(--c-hairline); border-radius: var(--c-radius, 2px); background: var(--c-panel); color: var(--c-fg); font: 400 15px/1.2 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; letter-spacing: 0.18em; } .ds-holdkey small { margin-left: 10px; color: var(--c-dim); font: 400 9px/1 'SF Mono', Consolas, monospace; letter-spacing: 0.22em; } .ds-holdkey:hover { background: var(--c-well); } .ds-holdkey:focus-visible { outline: 2px solid rgb(var(--c-lit) / 0.72); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "日课刻度",
+    "overview": "这是一台只服务背诵的仪表。今天到期的每一篇占一个固定格子，已背的点亮，未背的保持刻意设计过的熄灭态；顶部读数是当天进度，底部长按键是一次“拉动”，把界面从读数板切成背诵态。默认方向之外还有六套同构纸墨皮肤，只替换颜色、纸面与明暗，不改变布局、段码语义与交互。",
+    "keyCharacteristics": [
+      "以篇为单位的固定格子，而不是无限卡片流。",
+      "缺席是设计对象：未点亮的段仍有轮廓。",
+      "数字用大号等宽读数承担重量。",
+      "状态一律由段、边框与明暗表达。",
+      "原文是屏幕中心，操作层贴着底部安全区。"
+    ],
+    "rules": [
+      {
+        "name": "The One Lit Segment Rule",
+        "body": "同一时刻只让一个“当前”状态使用高亮红；已完成用绿，逾期用琥珀，三者不互相抢焦点。",
+        "section": "colors"
+      },
+      {
+        "name": "The No Badge Rule",
+        "body": "进度与状态优先由段码、边框和读数表达；不要新增对勾徽章、进度环或连续天数胶囊。",
+        "section": "colors"
+      },
+      {
+        "name": "The Readout Rule",
+        "body": "所有会变化的数字使用等宽与表格数字；不要用比例字体显示进度、分钟、段号或时间。",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "内容区默认平铺；阴影只在元素离开纸面或成为临时浮层时出现。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the fixed work cells in the day board after they are completed; a completed day should still show its record.",
+      "Do use red for current, green for complete, amber for overdue, and the ghost tone for absent.",
+      "Do keep the 2px surface radius and 1px segment radius in every new component.",
+      "Do keep core actions within one-hand reach at the bottom, above the nav and mini-player.",
+      "Do preserve keyboard focus, 16px mobile inputs, safe-area padding and reduced-motion behavior."
+    ],
+    "donts": [
+      "Don't introduce the hero-metric template, progress rings, streak badges or card stacks.",
+      "Don't use gradient text, decorative glass, hard offset shadows or colored 2px+ side borders.",
+      "Don't use emoji as the icon system; draw or reuse the linear SVG set.",
+      "Don't let a theme change the information architecture or the meaning of each segment state.",
+      "Don't shrink long Chinese text to fit; change the container or let it scroll."
+    ]
+  }
+}

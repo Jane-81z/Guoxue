@@ -1,0 +1,133 @@
+{
+  "title": "选择视觉世界",
+  "question": "骰子发到「刻本一叶」。留下它、换一张挑战牌，还是重掷？",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "刻本一叶",
+      "kicker": "THE ROLL",
+      "lineage": "线装刻本的版框、界行与版心鱼尾",
+      "thesis": "今天该背的几篇，就是书案上摊开的这一叶里的几栏；背完一栏，朱迹留在叶上。",
+      "palette": ["#DDD6C2", "#1A1A1C", "#B5271D", "#8A8272"],
+      "materials": ["毛边纸与帘纹", "印本墨：实心、硬边、无晕染", "印泥朱", "界行刻线"],
+      "viewport": "390×844 一屏：四周版框压边，界行把内容切成三到四栏；今日篇目竖排入栏，栏头是篇名与「今日 2/5 段」；右侧版心一列鱼尾刻度是进度；底部一方朱印，打卡前保持空心。",
+      "risk": "竖排在单手小屏上牺牲扫读速度；版框一旦只当装饰，这套世界就退化成怀旧文具。",
+      "raised": [
+        {
+          "from": "pop-culture-shelf-doujin-event-catalog",
+          "raise": "状态一律由手迹承担：已背用朱笔圈，生疏用朱点，界面里不出现对勾徽章或彩色进度条。"
+        },
+        {
+          "from": "eboy-pixorama-metropolis",
+          "raise": "小屏不缩版：宁可一屏只剩两栏，也不把整叶缩成看不清的糊版。"
+        },
+        {
+          "from": "dream-surreal-impossible-worlds-alphabet-storm",
+          "raise": "关键数字（今日 2/5、第几叶）用纪念碑式的大字号承担文字的物质重量，不缩成小徽章。"
+        },
+        {
+          "from": "textiles-weave-drape-fashion-drawcord-transforming-cape",
+          "raise": "开始背诵是一次「拉动」：整页从平铺（原文可见）转成结构态（原文收起、只剩评分），状态有名字可叫。"
+        }
+      ]
+    },
+    {
+      "id": "model-pick",
+      "label": "日课牌",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "私塾与书院的今日课业牌",
+      "thesis": "首页是一块立在书案上的今日课牌：今天该背的几篇用白粉字逐条写在牌上，背完一条用朱笔划掉。",
+      "palette": ["#14120F", "#F2EDE2", "#C0392B", "#3A2C1E"],
+      "materials": ["黑漆木牌", "白粉笔字", "朱笔", "木纹"],
+      "viewport": "整屏是一块牌：篇目按次序从上到下写满，每条右侧留一枚未划的朱点；牌脚一行小字记日期与叶码。",
+      "risk": "它最容易被做成怀旧文具；也是这个品类里大多数跑法会落到的方向。"
+    },
+    {
+      "id": "signals-instruments-seven-segment-alarm-clock",
+      "label": "日课刻度",
+      "verdict": "competitive",
+      "lineage": "七段数码管与记分牌",
+      "thesis": "今天到期的每一篇占一个固定格子，要么点亮，要么保持刻意设计过的熄灭态。",
+      "palette": ["#0B0D10", "#FF2E1F", "#2A1A18", "#8C8378"],
+      "materials": ["发光段", "未点亮的幽灵格", "哑光近黑底"],
+      "viewport": "一列固定格子占满首屏：已背的点亮成红段，未背的是仍有轮廓的幽灵格；顶部四位数字就是今日进度。",
+      "case": "产品清晰这一轴站得住：缺席被当成设计对象，进度是一列永不跳位的点亮格。但工业仪表不是使用者的文化家园。",
+      "risk": "网格一旦不严格，就沦为复古噱头。",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-seven-segment-alarm-clock-hero.webp"
+    },
+    {
+      "id": "medium-native-hypercard-stack-shoebox",
+      "label": "卡片盒",
+      "verdict": "competitive",
+      "lineage": "HyperCard 卡片堆栈",
+      "thesis": "一篇一卡，浏览与编辑是同一个动作，每次跳转都留下可回退的路径。",
+      "palette": ["#F7F7F4", "#111111", "#B9B9B4"],
+      "materials": ["一位黑白", "网点灰", "手绘按钮边框"],
+      "viewport": "一叠固定比例的卡片，最上面那张就是今天该背的篇目；按钮是手绘边框，点击即溶解到下一张。",
+      "case": "产品清晰强：一卡一篇、就地编辑、每张卡可深链，与「篇目页可看可改」高度同构。但早期 Mac 的世界不是使用者的文化家园。",
+      "risk": "一位黑白的克制容易被误读成没做完。",
+      "hero": "https://impeccable.style/worlds/cards/medium-native-hypercard-stack-shoebox-hero.webp"
+    },
+    {
+      "id": "pop-culture-shelf-doujin-event-catalog",
+      "label": "展场目录",
+      "verdict": "declined",
+      "lineage": "同人展目录页与场馆图",
+      "thesis": "今天要背的几篇，是从成百上千篇里圈出来的那几格。",
+      "palette": ["#E9E4D8", "#191919", "#D2452F"],
+      "materials": ["新闻纸", "单色印刷", "圆珠笔圈选"],
+      "case": "融合不佳：使用者的文化家园里没有同人展。",
+      "kept": "状态由手迹承担。"
+    },
+    {
+      "id": "eboy-pixorama-metropolis",
+      "label": "像素城",
+      "verdict": "declined",
+      "lineage": "eBoy 等距像素都市",
+      "thesis": "整座城就是一页可缩放的目录，每个街区是一个可点开的单位。",
+      "palette": ["#FF2D55", "#00C2FF", "#FFE600", "#00D26A"],
+      "materials": ["硬像素网格", "全饱和原色", "零抗锯齿"],
+      "case": "融合不佳：全饱和像素与国学文本的世界不相干。",
+      "kept": "整倍数缩放，绝不缩成糊。"
+    },
+    {
+      "id": "dream-surreal-impossible-worlds-alphabet-storm",
+      "label": "文字风暴",
+      "verdict": "declined",
+      "lineage": "字母成云、成雨、成河的超现实世界",
+      "thesis": "背下来的文字从散字聚成句子，像天气成形一样堆叠在页面上。",
+      "palette": ["#FFFFFF", "#0F0F10", "#C9CED0", "#8FA0A8"],
+      "materials": ["纸白地", "风暴黑字", "银色闪"],
+      "case": "融合不佳：文字变天气会直接损害可读性，而这是一个操作界面。",
+      "kept": "纪念碑式的文字尺度。"
+    },
+    {
+      "id": "textiles-weave-drape-fashion-drawcord-transforming-cape",
+      "label": "抽绳变形",
+      "verdict": "declined",
+      "lineage": "一根抽绳把平面变成结构的披风",
+      "thesis": "整页是一个可被拉动的平面，一次拉动把它收成有结构的状态。",
+      "palette": ["#111014", "#C8A24A", "#4A4F5A"],
+      "materials": ["哑光黑绸", "金色抽绳", "石墨色缝线"],
+      "case": "融合不佳：纺织与时装不是使用者的文化家园。",
+      "kept": "一次拉动改变整体形态。"
+    }
+  ],
+  "reroll": {
+    "registers": ["safer", "bolder"]
+  },
+  "buildPath": {
+    "value": "code",
+    "toggle": false
+  },
+  "canon": true,
+  "canonCard": {
+    "label": "这个品类的标准形",
+    "thesis": "现代学习 App 的通用形态，做到无可挑剔。",
+    "palette": ["#FFFFFF", "#111827", "#2563EB"],
+    "materials": ["干净网格", "圆角卡片", "产品级留白"],
+    "viewport": "顶部进度环、连续天数、卡片堆叠、蓝色主按钮。",
+    "risk": "按定义与竞品无法区分。"
+  },
+  "steer": true
+}

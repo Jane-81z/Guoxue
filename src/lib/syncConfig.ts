@@ -5,21 +5,42 @@
  */
 export const DEFAULT_SYNC_ENDPOINT = 'https://guoxue-sync.pages.dev/api/sync'
 
+/** GitHub Gist 作为云端的接口地址（测试时会指向本机替身） */
+export const DEFAULT_GITHUB_API = 'https://api.github.com'
+
+/**
+ * 云端的两种存法：
+ * - `gist`：用一个 GitHub Gist 存整份数据（推荐，因为 GitHub 在国内可达）
+ * - `cloudflare`：用 Cloudflare Pages Function + KV（更快，但控制台在部分网络打不开）
+ */
+export type SyncProvider = 'gist' | 'cloudflare'
+
 /** 同步码：去掉容易看错的字符（0/O、1/I/l） */
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 export const SYNC_CODE_LENGTH = 12
 
 export interface SyncConfig {
+  provider: SyncProvider
   /** 同步码，空字符串表示尚未开启同步 */
   code: string
   endpoint: string
+  /** GitHub 令牌（只勾 Gists 读写），仅存在本机，不参与同步 */
+  token: string
+  /** 找到或创建出来的 Gist id */
+  gistId: string
+  /** GitHub API 地址，一般不用改 */
+  api: string
   auto: boolean
   lastSyncedAt: number | null
 }
 
 export const DEFAULT_SYNC_CONFIG: SyncConfig = {
+  provider: 'gist',
   code: '',
   endpoint: DEFAULT_SYNC_ENDPOINT,
+  token: '',
+  gistId: '',
+  api: DEFAULT_GITHUB_API,
   auto: false,
   lastSyncedAt: null,
 }

@@ -6,6 +6,8 @@ const SYNC_ENDPOINT = 'http://localhost:4190/api/sync'
 /** 在设置页里配置云同步：同一个码 = 同一份数据 */
 async function configureSync(page: Page, code: string, endpoint = SYNC_ENDPOINT) {
   await page.goto('/settings')
+  // 默认走 GitHub Gist，这一组用例验证 Cloudflare 那条路
+  await page.getByRole('button', { name: 'Cloudflare' }).click()
   await page.getByRole('button', { name: /^同步码/ }).click()
   await page.getByLabel('同步服务地址').fill(endpoint)
   await page.getByLabel('同步码').fill(code)
@@ -15,7 +17,7 @@ async function configureSync(page: Page, code: string, endpoint = SYNC_ENDPOINT)
 async function syncNow(page: Page) {
   await page.goto('/settings')
   await page.getByRole('button', { name: '同步', exact: true }).click()
-  await expect(page.getByText(/已同步：拉取/)).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/已同步（Cloudflare）：拉取/)).toBeVisible({ timeout: 10_000 })
 }
 
 test.describe('云同步（同步码，无账号）', () => {
@@ -72,9 +74,10 @@ test.describe('云同步（同步码，无账号）', () => {
 
   test('没设同步码时点同步会提示先设码', async ({ page }) => {
     await page.goto('/settings')
+    await page.getByRole('button', { name: 'Cloudflare' }).click()
     await expect(page.getByRole('button', { name: '先设同步码' })).toBeVisible()
     await page.getByRole('button', { name: '先设同步码' }).click()
-    await expect(page.getByText('请先设置同步码（至少 8 位）')).toBeVisible()
+    await expect(page.getByText('请先设置同步码（至少 8 位，或点「生成随机码」）')).toBeVisible()
   })
 
   test('同步码与服务地址会写进本地设置，重载后仍在', async ({ page }) => {

@@ -15,6 +15,7 @@ import {
   formatSyncCode,
   generateSyncCode,
   isValidSyncCode,
+  DEFAULT_GITHUB_API,
 } from '../lib/syncConfig'
 import { formatRelativeTime } from '../lib/selectors'
 
@@ -58,6 +59,30 @@ function LampKey({
 }
 
 /** 动作键 */
+function ProviderKey({
+  active,
+  label,
+  onPress,
+}: {
+  active: boolean
+  label: string
+  onPress: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onPress}
+      className={`border px-2.5 py-1.5 text-[13px] ${
+        active ? 'border-lit/60 text-fg' : 'border-hairline text-dim hover:bg-well'
+      }`}
+      style={{ borderRadius: 'var(--c-radius-sm)' }}
+    >
+      {label}
+    </button>
+  )
+}
+
 function ActKey({
   label,
   onPress,
@@ -170,6 +195,14 @@ export default function SettingsPage() {
   }
 
   const toggleBand = (id: string) => setOpenBand((prev) => (prev === id ? null : id))
+  const usingGist = settings.sync.provider === 'gist'
+  const syncReady = usingGist
+    ? settings.sync.token.trim().length > 0
+    : isValidSyncCode(settings.sync.code)
+  const syncBlockedLabel = usingGist ? '请先粘贴令牌' : '先设同步码'
+  const syncBlockedHint = usingGist
+    ? '请先粘贴 GitHub 令牌（只勾 gists 权限）'
+    : '请先设置同步码（至少 8 位，或点「生成随机码」）'
   const sliderClass = 'w-full accent-[#FF2E1F]'
 
   return (
@@ -293,48 +326,114 @@ export default function SettingsPage() {
 
         <GroupLabel>云同步 SYNC</GroupLabel>
         <Band
-          label="同步码"
-          kicker="两端填同一个码即同一份数据"
-          value={settings.sync.code ? formatSyncCode(settings.sync.code) : '未设置'}
-          tone={settings.sync.code ? 'default' : 'dim'}
-          open={openBand === 'synccode'}
-          onToggle={() => toggleBand('synccode')}
-        >
-          <div className="space-y-3">
-            <input
-              aria-label="同步码"
-              className="field readout tracking-[0.2em]"
-              placeholder="输入另一端显示的同步码"
-              value={formatSyncCode(settings.sync.code)}
-              onChange={(e) => void updateSync({ code: e.target.value })}
-            />
-            <input
-              aria-label="同步服务地址"
-              className="field readout text-[13px]"
-              placeholder={DEFAULT_SYNC_ENDPOINT}
-              value={settings.sync.endpoint}
-              onChange={(e) => void updateSync({ endpoint: e.target.value.trim() })}
-            />
-            <div className="flex flex-wrap gap-2">
-              <ActKey
-                label="生成随机码"
-                onPress={() => {
-                  void updateSync({ code: generateSyncCode() })
-                }}
+          label="云端存哪"
+          kicker="两种都行 · 数据先写本机，同步是后台动作"
+          control={
+            <span className="flex gap-1.5">
+              <ProviderKey
+                active={settings.sync.provider === 'gist'}
+                label="GitHub"
+                onPress={() => void updateSync({ provider: 'gist' })}
               />
-              {settings.sync.code ? (
-                <ActKey label="清空" onPress={() => void updateSync({ code: '' })} />
-              ) : null}
+              <ProviderKey
+                active={settings.sync.provider === 'cloudflare'}
+                label="Cloudflare"
+                onPress={() => void updateSync({ provider: 'cloudflare' })}
+              />
+            </span>
+          }
+        />
+
+        {settings.sync.provider === 'gist' ? (
+          <>
+            <Band
+              label="GitHub 令牌"
+              kicker="只勾 gists 权限即可"
+              value={settings.sync.token ? '已设置' : '未设置'}
+              tone={settings.sync.token ? 'done' : 'dim'}
+              open={openBand === 'token'}
+              onToggle={() => toggleBand('token')}
+            >
+              <div className="space-y-3">
+                <input
+                  type="password"
+                  aria-label="GitHub 令牌"
+                  className="field readout text-[13px]"
+                  placeholder="ghp_… 或 github_pat_…"
+                  value={settings.sync.token}
+                  onChange={(e) => void updateSync({ token: e.target.value.trim() })}
+                />
+                <input
+                  aria-label="GitHub API 地址"
+                  className="field readout text-[13px]"
+                  placeholder={DEFAULT_GITHUB_API}
+                  value={settings.sync.api}
+                  onChange={(e) => void updateSync({ api: e.target.value.trim() })}
+                />
+                <p className="text-[13px] leading-relaxed text-dim">
+                  令牌只存在这台设备上，不参与同步。到
+                  github.com/settings/tokens 建一个 classic token，权限只勾 <b>gists</b>；
+                  有效期选「No expiration」最省心，否则到期后在这里粘贴新的就行——云端那份数据不受影响。
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <ActKey
+                    label="清除令牌"
+                    onPress={() => void updateSync({ token: '', gistId: '' })}
+                  />
+                </div>
+              </div>
+            </Band>
+            <Band
+              label="云端 Gist"
+              kicker="首次同步时自动建立，描述为 guoxue-recitation-sync"
+              value={settings.sync.gistId ? `${settings.sync.gistId.slice(0, 8)}…` : '未建立'}
+              tone="dim"
+            />
+          </>
+        ) : (
+          <Band
+            label="同步码"
+            kicker="两端填同一个码即同一份数据"
+            value={settings.sync.code ? formatSyncCode(settings.sync.code) : '未设置'}
+            tone={settings.sync.code ? 'default' : 'dim'}
+            open={openBand === 'synccode'}
+            onToggle={() => toggleBand('synccode')}
+          >
+            <div className="space-y-3">
+              <input
+                aria-label="同步码"
+                className="field readout tracking-[0.2em]"
+                placeholder="输入另一端显示的同步码"
+                value={formatSyncCode(settings.sync.code)}
+                onChange={(e) => void updateSync({ code: e.target.value })}
+              />
+              <input
+                aria-label="同步服务地址"
+                className="field readout text-[13px]"
+                placeholder={DEFAULT_SYNC_ENDPOINT}
+                value={settings.sync.endpoint}
+                onChange={(e) => void updateSync({ endpoint: e.target.value.trim() })}
+              />
+              <div className="flex flex-wrap gap-2">
+                <ActKey
+                  label="生成随机码"
+                  onPress={() => void updateSync({ code: generateSyncCode() })}
+                />
+                {settings.sync.code ? (
+                  <ActKey label="清空" onPress={() => void updateSync({ code: '' })} />
+                ) : null}
+              </div>
+              <p className="text-[13px] leading-relaxed text-dim">
+                同步码就是钥匙——电脑上生成一个，手机上输入同一个，两边的篇目、拼音、注释与复习进度就会合并到一起。
+                没有账号、没有密码，所以码要自己收好：知道这个码的人就能读写你的数据。
+              </p>
+              <p className="readout text-[10px] tracking-[0.14em] text-dim">
+                ENDPOINT {settings.sync.endpoint || DEFAULT_SYNC_ENDPOINT}
+              </p>
             </div>
-            <p className="text-[13px] leading-relaxed text-dim">
-              同步码就是钥匙——电脑上生成一个，手机上输入同一个，两边的篇目、拼音、注释与复习进度就会合并到一起。
-              没有账号、没有密码，所以码要自己收好：知道这个码的人就能读写你的数据。
-            </p>
-            <p className="readout text-[10px] tracking-[0.14em] text-dim">
-              ENDPOINT {settings.sync.endpoint || DEFAULT_SYNC_ENDPOINT}
-            </p>
-          </div>
-        </Band>
+          </Band>
+        )}
+
         <Band
           label="立即同步"
           kicker="双向合并 · 云端与本地取较新"
@@ -345,11 +444,11 @@ export default function SettingsPage() {
           }
           action={
             <ActKey
-              label={isValidSyncCode(settings.sync.code) ? '同步' : '先设同步码'}
+              label={syncReady ? '同步' : syncBlockedLabel}
               onPress={() => {
-                if (!isValidSyncCode(settings.sync.code)) {
-                  setOpenBand('synccode')
-                  notify('请先设置同步码（至少 8 位）', 'error')
+                if (!syncReady) {
+                  setOpenBand(settings.sync.provider === 'gist' ? 'token' : 'synccode')
+                  notify(syncBlockedHint, 'error')
                   return
                 }
                 void syncNow()

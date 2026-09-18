@@ -33,5 +33,12 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 30_000,
     },
+    {
+      // 端到端测试用的 GitHub Gist API 替身
+      command: 'node scripts/dev/mock-github-server.mjs 4191',
+      url: 'http://localhost:4191/health',
+      reuseExistingServer: true,
+      timeout: 30_000,
+    },
   ],
 })

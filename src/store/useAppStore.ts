@@ -7,6 +7,7 @@ import { splitPassages } from '../lib/split'
 import { DEFAULT_SYNC_ENDPOINT, isValidSyncCode, normalizeSyncCode } from '../lib/syncConfig'
 import { mergePayloads } from '../lib/syncMerge'
 import { pullPayload, pushPayload } from '../lib/syncClient'
+import { createGist, findGist, readGist, writeGist } from '../lib/syncGist'
 
 export type ToastTone = 'info' | 'success' | 'error'
 
@@ -258,27 +259,68 @@ export const useAppStore = create<AppState>()((set, get) => ({
     get().notify(parts.join('，'), result.missing ? 'error' : 'success')
   },
 
-  /** 一次完整同步：本地打包 → 拉远端 → 合并 → 写回本地 → 推回云端 */
+  /**
+   * 一次完整同步：本地打包 → 拉远端 → 合并 → 写回本地 → 推回云端。
+   * 云端有两种存法：GitHub Gist（默认，国内可达）与 Cloudflare KV。
+   */
   syncNow: async () => {
     const { settings } = get()
-    const code = normalizeSyncCode(settings.sync.code)
-    if (!isValidSyncCode(code)) {
-      get().notify('请先设置同步码（至少 8 位）', 'error')
-      return
-    }
-    const endpoint = settings.sync.endpoint || DEFAULT_SYNC_ENDPOINT
+    const sync = settings.sync
     try {
       const local = await repo.loadSyncPayload()
-      const remote = await pullPayload(endpoint, code)
+
+      let remote = null
+      let persist: Partial<Settings['sync']> = {}
+      let where = ''
+
+      if (sync.provider === 'gist') {
+        const token = sync.token.trim()
+        if (!token) {
+          get().notify('请先粘贴 GitHub 令牌（只勾 gists 权限）', 'error')
+          return
+        }
+        const api = sync.api
+        const gistId = sync.gistId || (await findGist(api, token)) || ''
+        if (gistId) {
+          remote = await readGist(api, token, gistId)
+        }
+        where = gistId ? 'Gist' : '新建 Gist'
+        persist = { gistId, token, api }
+      } else {
+        const code = normalizeSyncCode(sync.code)
+        if (!isValidSyncCode(code)) {
+          get().notify('请先设置同步码（至少 8 位）', 'error')
+          return
+        }
+        const endpoint = sync.endpoint || DEFAULT_SYNC_ENDPOINT
+        remote = await pullPayload(endpoint, code)
+        where = 'Cloudflare'
+        persist = { code, endpoint }
+      }
+
       const { payload, pulledIn, purged } = mergePayloads(local, remote)
       await repo.applySyncPayload(payload)
-      await pushPayload(endpoint, code, payload)
+
+      if (sync.provider === 'gist') {
+        const token = sync.token.trim()
+        const api = sync.api
+        const gistId = persist.gistId || (await findGist(api, token)) || ''
+        if (gistId && remote) {
+          await writeGist(api, token, gistId, payload)
+        } else {
+          const created = await createGist(api, token, payload)
+          persist = { ...persist, gistId: created }
+        }
+      } else {
+        await pushPayload(sync.endpoint || DEFAULT_SYNC_ENDPOINT, normalizeSyncCode(sync.code), payload)
+      }
+
       const next = await repo.saveSettings({
-        sync: { ...settings.sync, code, endpoint, lastSyncedAt: Date.now() },
+        sync: { ...sync, ...persist, lastSyncedAt: Date.now() },
       })
       set({ settings: next })
       await get().refresh()
-      const parts = [`已同步：拉取 ${pulledIn} 条`]
+      const parts = [`已同步（${where}）：拉取 ${pulledIn} 条`]
       if (purged) parts.push(`清理 ${purged} 条已删除`)
       parts.push(`云端现有 ${payload.works.length} 篇 / ${payload.passages.length} 段`)
       get().notify(parts.join('，'), 'success')

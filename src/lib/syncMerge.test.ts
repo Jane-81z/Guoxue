@@ -13,7 +13,22 @@ import type { DailyStat, Passage, Work } from '../types'
 const NOW = 1_700_000_000_000
 
 function work(id: string, title: string, updatedAt: number): Work {
-  return { id, title, tags: [], createdAt: 0, updatedAt }
+  return {
+    id,
+    title,
+    tags: [],
+    createdAt: 0,
+    updatedAt,
+    srs: {
+      ease: 2.5,
+      intervalDays: 0,
+      repetitions: 0,
+      dueAt: '2026-09-18',
+      lastRating: null,
+      lastReviewedAt: null,
+      history: [],
+    },
+  }
 }
 
 function passage(id: string, text: string, updatedAt: number): Passage {
@@ -27,6 +42,8 @@ function passage(id: string, text: string, updatedAt: number): Passage {
     pinyinCache: null,
     note: '',
     audioId: null,
+    audioStartMs: null,
+    audioEndMs: null,
     srs: {
       ease: 2.5,
       intervalDays: 0,

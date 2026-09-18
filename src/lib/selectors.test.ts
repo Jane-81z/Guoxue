@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { duePassages, overallStats, passagesOfWork, workProgress } from './selectors'
+import {
+  dueWorks,
+  overallStats,
+  passagesOfWork,
+  recitePassagesOf,
+  workProgress,
+} from './selectors'
 import { createSrsState, schedule } from './srs'
-import type { DailyStat, Passage, Work } from '../types'
+import type { DailyStat, Passage, SrsState, Work } from '../types'
 
-const TODAY = '2026-09-17'
+const TODAY = '2026-09-18'
 
-function work(id: string, title: string): Work {
-  return { id, title, tags: [], createdAt: 0, updatedAt: 0 }
+function work(id: string, title: string, srs: SrsState = createSrsState(TODAY)): Work {
+  return { id, title, tags: [], createdAt: 0, updatedAt: 0, srs }
 }
 
 function passage(id: string, workId: string, order: number, extras: Partial<Passage> = {}): Passage {
@@ -20,6 +26,8 @@ function passage(id: string, workId: string, order: number, extras: Partial<Pass
     pinyinCache: null,
     note: '',
     audioId: null,
+    audioStartMs: null,
+    audioEndMs: null,
     srs: createSrsState(TODAY),
     createdAt: 0,
     updatedAt: 0,
@@ -27,91 +35,91 @@ function passage(id: string, workId: string, order: number, extras: Partial<Pass
   }
 }
 
-describe('duePassages', () => {
-  it('只取要背且到期的段落，新卡排在前', () => {
-    const fluent = schedule(createSrsState(TODAY), 'fluent', TODAY)
-    const passages = [
-      passage('a', 'w1', 0, { srs: fluent }),
-      passage('b', 'w1', 1),
-      passage('c', 'w1', 2, { isRecite: false }),
-    ]
-    const due = duePassages(passages, TODAY)
-    // 今天评为「流畅」的卡片下次到期是明天，所以只剩新卡待复习
-    expect(due.map((p) => p.id)).toEqual(['b'])
+const reviewedToday = () => schedule(createSrsState(TODAY), 'fluent', TODAY)
+
+describe('dueWorks', () => {
+  it('新的篇今天到期，复习过的篇明天才到期', () => {
+    const works = [work('w1', '论语'), work('w2', '道德经', reviewedToday())]
+    const passages = [passage('a', 'w1', 0), passage('b', 'w2', 0)]
+    expect(dueWorks(works, passages, TODAY).map((w) => w.id)).toEqual(['w1'])
+    // 第二天：w2 到期；w1 因为一直没背而变成逾期，仍在队列里
+    const tomorrow = dueWorks(works, passages, '2026-09-19').map((w) => w.id)
+    expect(tomorrow).toContain('w2')
+    expect(tomorrow).toContain('w1')
   })
 
-  it('未到期的不入队', () => {
-    const future = schedule(createSrsState(TODAY), 'fluent', TODAY)
-    const passages = [passage('a', 'w1', 0, { srs: future })]
-    expect(duePassages(passages, '2026-09-16')).toHaveLength(0)
-    expect(duePassages(passages, '2026-09-17')).toHaveLength(0)
-    expect(duePassages(passages, '2026-09-18')).toHaveLength(1)
+  it('整篇都设成不背的篇不进复习队列', () => {
+    const works = [work('w1', '论语')]
+    const passages = [passage('a', 'w1', 0, { isRecite: false })]
+    expect(dueWorks(works, passages, TODAY)).toHaveLength(0)
   })
 
-  it('逾期卡片排在前面', () => {
+  it('逾期篇排在前面，其余按熟练度升序', () => {
+    const overdue = { ...createSrsState('2026-09-10'), dueAt: '2026-09-10', repetitions: 1 }
+    const works = [work('fresh', '新篇'), work('late', '逾期篇', overdue)]
+    const passages = [passage('a', 'fresh', 0), passage('b', 'late', 0)]
+    expect(dueWorks(works, passages, TODAY).map((w) => w.id)).toEqual(['late', 'fresh'])
+  })
+})
+
+describe('recitePassagesOf', () => {
+  it('只返回要背的段，按顺序', () => {
     const passages = [
-      passage('new', 'w1', 0),
-      passage('overdue', 'w1', 1, {
-        srs: { ...createSrsState('2026-09-10'), dueAt: '2026-09-10', history: [{ date: '2026-09-09', rating: 'hard' as const }], lastReviewedAt: '2026-09-09', repetitions: 1, intervalDays: 1, ease: 2.36 },
-      }),
+      passage('a', 'w1', 0),
+      passage('b', 'w1', 1, { isRecite: false }),
+      passage('c', 'w1', 2),
     ]
-    expect(duePassages(passages, TODAY).map((p) => p.id)).toEqual(['overdue', 'new'])
+    expect(recitePassagesOf(passages, 'w1').map((p) => p.id)).toEqual(['a', 'c'])
   })
 })
 
 describe('workProgress', () => {
-  it('统计要背段数、已背段数、待复习与录音数', () => {
-    const w = work('w1', '论语')
-    const reviewed = schedule(createSrsState(TODAY), 'fluent', TODAY)
+  it('按篇统计：复习过一次即算已背，段数只用于显示', () => {
+    const w = work('w1', '论语', reviewedToday())
     const passages = [
-      passage('a', 'w1', 0, { srs: reviewed, audioId: 'x' }),
+      passage('a', 'w1', 0, { audioId: 'x' }),
       passage('b', 'w1', 1),
       passage('c', 'w1', 2, { isRecite: false }),
     ]
     const progress = workProgress(w, passages, TODAY)
     expect(progress.total).toBe(3)
     expect(progress.reciteCount).toBe(2)
-    expect(progress.reviewedCount).toBe(1)
-    expect(progress.audioCount).toBe(1)
+    expect(progress.reviewedCount).toBe(2)
     expect(progress.reviewedTotal).toBe(1)
-    expect(progress.dueCount).toBe(1)
+    expect(progress.audioCount).toBe(1)
+    expect(progress.dueCount).toBe(0)
+    expect(progress.mastery).toBeGreaterThan(0)
   })
 })
 
-describe('overallStats', () => {
-  it('汇总篇目、段落、今日复习与累计次数', () => {
-    const works = [work('w1', '论语'), work('w2', '道德经')]
+describe('overallStats（口径按篇）', () => {
+  it('待复习与已完成都数篇，段数另算', () => {
+    const works = [work('w1', '论语'), work('w2', '道德经'), work('w3', '岳阳楼记', reviewedToday())]
     const passages = [
       passage('a', 'w1', 0),
-      passage('b', 'w1', 1, { isRecite: false }),
-      passage('c', 'w2', 0),
+      passage('b', 'w1', 1),
+      passage('c', 'w2', 0, { isRecite: false }),
+      passage('d', 'w3', 0),
     ]
     const stats: DailyStat[] = [
       {
         date: TODAY,
-        reviewedCount: 3,
-        ratings: { blank: 0, hard: 1, rusty: 1, fluent: 1 },
-        workIds: ['w1'],
+        reviewedCount: 1,
+        ratings: { blank: 0, hard: 0, rusty: 0, fluent: 1 },
+        workIds: ['w3'],
         checkedIn: false,
-        updatedAt: 0,
-      },
-      {
-        date: '2026-09-16',
-        reviewedCount: 2,
-        ratings: { blank: 0, hard: 0, rusty: 1, fluent: 1 },
-        workIds: ['w2'],
-        checkedIn: true,
         updatedAt: 0,
       },
     ]
     const result = overallStats(works, passages, TODAY, stats)
-    expect(result.totalWorks).toBe(2)
-    expect(result.recitePassages).toBe(2)
-    expect(result.dueCount).toBe(2)
-    expect(result.dueWorks).toBe(2)
-    expect(result.reviewedToday).toBe(3)
-    expect(result.totalReviews).toBe(5)
-    expect(result.bandCounts.new).toBe(2)
+    expect(result.totalWorks).toBe(3)
+    expect(result.reciteWorks).toBe(2) // w3 已复习过，明天才到期；w2 没有要背的段
+    expect(result.dueWorks).toBe(1)
+    expect(result.duePassages).toBe(2)
+    expect(result.reviewedToday).toBe(1)
+    expect(result.totalReviews).toBe(1)
+    expect(result.startedWorks).toBe(1)
+    expect(result.bandCounts.new).toBe(1)
   })
 })
 

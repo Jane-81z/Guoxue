@@ -30,6 +30,8 @@ export interface Work {
   tags: string[]
   createdAt: number
   updatedAt: number
+  /** 篇级排期：复习以「篇」为单位，评分与熟练度都记在这里 */
+  srs: SrsState
 }
 
 /** 段落（卡片）。workId 是归属关系的唯一事实来源，passageIds 由查询派生。 */
@@ -47,6 +49,10 @@ export interface Passage {
   pinyinCache: string | null
   note: string
   audioId: string | null
+  /** 整篇录音里的区间（毫秒）；null 表示整段就是整个文件 */
+  audioStartMs: number | null
+  audioEndMs: number | null
+  /** 段级排期：新版不再驱动复习，只作为历史与展示 */
   srs: SrsState
   createdAt: number
   updatedAt: number
@@ -97,6 +103,8 @@ export interface PlayerPrefs {
 }
 
 export interface Settings {
+  /** 复习模型：'work' = 以篇为单位（当前）；旧版是段级 */
+  reviewModel: 'passage' | 'work'
   /** 视觉方向 id，见 src/theme/themes.ts */
   theme: string
   /** 云同步配置，见 src/lib/syncConfig.ts */

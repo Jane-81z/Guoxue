@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { rateCurrent, seedWork, startReciting } from './helpers'
 
-test.describe('导入 → 标记 → 复习评分 → 打卡', () => {
-  test('一条完整闭环', async ({ page }) => {
+test.describe('导入 → 标记 → 整篇复习 → 评分 → 打卡', () => {
+  test('一条完整闭环（复习单位是「篇」）', async ({ page }) => {
     await seedWork(page, {
       title: '论语·学而第一',
       dynasty: '先秦',
@@ -15,50 +15,59 @@ test.describe('导入 → 标记 → 复习评分 → 打卡', () => {
       skipLines: [2],
     })
 
-    // 导入页把第 3 行标成「不用背」，所以这一篇要背 2 段
+    // 第 3 行被设成「不背」，所以这一篇只有 2 段要背；队列按篇算，只有 1 篇
     await page.goto('/review')
     const readout = page.locator('.panel').first()
-    await expect(readout).toContainText('DONE / DUE')
-    // 读数板对辅助技术给出的完整句子
-    await expect(readout).toContainText('今日需背 2 段')
-    // 预计用时读数
-    await expect(readout).toContainText('MIN')
+    await expect(readout).toContainText('已完成 / 今日 DUE')
+    await expect(readout).toContainText('今天需背 1 篇')
     await expect(readout).toContainText(/预计还需 \d+ 分钟/)
 
-    // 长按开始（键盘等价）：整块板转进背诵态
+    // 长按进入背诵态：整篇默认熄灭
     await startReciting(page)
-    await expect(page.getByRole('button', { name: /原文熄灭/ })).toBeVisible()
+    await expect(page.getByText('整篇熄灭，先背一遍')).toBeVisible()
 
-    // 点亮原文能拿到原文
-    await page.getByRole('button', { name: /点亮原文/ }).click()
-    // 原文以 ruby 呈现：汉字上方带注音，所以 DOM 文本里夹着拼音
-    await expect(page.locator('.text-body ruby rt').first()).toHaveText('zǐ')
-    await expect(page.locator('.text-body')).toContainText('xué')
+    // 提示下一段：一次亮一段
+    await page.getByRole('button', { name: '提示下一段' }).click()
+    await expect(page.locator('.text-body').first()).toContainText('xué')
+    await expect(page.getByText('还有 1 段未显示')).toBeVisible()
 
-    // 四档评分：两段都评完
+    // 显示全文：只显示要背的 2 段（第 3 段不出现）
+    await page.getByRole('button', { name: '显示全文' }).click()
+    await expect(page.locator('.text-body')).toHaveCount(2)
+    await expect(page.locator('.text-body').nth(1)).toContainText('lái')
+
+    // 全部隐藏回到熄灭态
+    await page.getByRole('button', { name: '全部隐藏' }).click()
+    await expect(page.getByText('整篇熄灭，先背一遍')).toBeVisible()
+    await page.getByRole('button', { name: '提示下一段' }).click()
+    await expect(page.locator('.text-body')).toHaveCount(1)
+
+    // 整篇一次评分
     await rateCurrent(page, '流畅背诵')
-    await rateCurrent(page, '略有卡顿')
 
-    // 当日到期评完 → 自动打卡
+    // 当日到期篇评完 → 自动打卡
     await expect(page.getByText('今日任务已完成')).toBeVisible()
     await expect(page.getByText('已打卡 · CHECKED IN')).toBeVisible()
 
-    // 打卡写进了统计：热力图那一格有记录
+    // 统计口径按篇：今天完成 1 篇
     await page.goto('/review')
-    await expect(page.locator('.panel').first()).toContainText('已完成 2 段')
+    await expect(page.locator('.panel').first()).toContainText('已完成 1 篇')
   })
 
-  test('跳过不影响排期，评分后才离队', async ({ page }) => {
-    await seedWork(page, { title: '道德经·第一章', lines: ['道可道，非常道。', '名可名，非常名。'] })
+  test('跳过在多篇之间轮换，且不改排期', async ({ page }) => {
+    await seedWork(page, { title: '论语·学而第一', lines: ['子曰：学而时习之，不亦说乎？'] })
+    await seedWork(page, { title: '道德经·第一章', lines: ['道可道，非常道。'] })
+
     await page.goto('/review')
     await startReciting(page)
 
-    await expect(page.getByText('第 1 段')).toBeVisible()
+    const head = page.locator('section .panel').first()
+    await expect(head).toContainText('论语·学而第一')
     await page.getByRole('button', { name: '跳过' }).click()
-    await expect(page.getByText('第 2 段')).toBeVisible()
+    await expect(head).toContainText('道德经·第一章')
 
-    // 跳过之后仍是 2 张待背
-    await expect(page.locator('.panel').first()).toContainText('今日需背 2 段')
+    // 跳过之后仍是 2 篇待背
+    await expect(page.locator('.panel').first()).toContainText('今天需背 2 篇')
   })
 })
 
@@ -71,18 +80,14 @@ test.describe('篇目页', () => {
     const card = page.locator('article').first()
     await expect(card).toContainText('第 01 / 共 02 篇')
 
-    // 翻到下一篇：标题变了，地址也记下了这一篇
     await page.getByRole('button', { name: '下一篇' }).click()
     await expect(page.locator('article').first()).toContainText('岳阳楼记')
     await expect(page).toHaveURL(/work=/)
 
-    // 深链：直接打开这个地址就是这一篇
     const url = page.url()
     await page.goto(url)
-    await expect(page.locator('article').first()).toContainText('岳阳楼记')
     await expect(page.locator('article').first()).toContainText('第 02 / 共 02 篇')
 
-    // 「篇目」抽屉能跳到另一篇
     await page.getByRole('button', { name: '篇目一览' }).click()
     await page.locator('button', { hasText: '论语·学而第一' }).first().click()
     await expect(page.locator('article').first()).toContainText('第 01 / 共 02 篇')
@@ -99,7 +104,6 @@ test.describe('篇目页', () => {
 
     await row.getByRole('button', { name: '编辑' }).click()
     await expect(page.getByRole('button', { name: '删除该段' })).toBeVisible()
-    await expect(page.getByRole('button', { name: '重置该段进度' })).toBeVisible()
   })
 })
 
@@ -109,19 +113,16 @@ test.describe('设置页', () => {
     const fontBand = page.locator('div', { hasText: '正文字号' }).first()
     await expect(fontBand).toContainText('1.00×')
 
-    // 展开这条带，把字号推到最大
     await page.getByRole('button', { name: /正文字号/ }).click()
     const slider = page.locator('input[type="range"]').first()
     await slider.fill('1.5')
     await expect(page.locator('div', { hasText: '正文字号' }).first()).toContainText('1.50×')
 
-    // 状态灯键：开关切换会改标签
     const pinyinLamp = page.getByRole('button', { name: /篇目页显示拼音/ })
     await expect(pinyinLamp).toContainText('OFF')
     await pinyinLamp.click()
     await expect(pinyinLamp).toContainText('ON')
 
-    // 重载后设置仍在（写进 IndexedDB）
     await page.reload()
     await expect(page.locator('div', { hasText: '正文字号' }).first()).toContainText('1.50×')
     await expect(page.getByRole('button', { name: /篇目页显示拼音/ })).toContainText('ON')

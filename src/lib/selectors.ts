@@ -1,5 +1,5 @@
 import type { AudioAsset, DailyStat, Passage, Work } from '../types'
-import { MASTERED_THRESHOLD, isDue, masteryScore } from './srs'
+import { MASTERED_THRESHOLD, createSrsState, isDue, masteryScore } from './srs'
 
 export function workMap(works: Work[]): Map<string, Work> {
   return new Map(works.map((w) => [w.id, w]))
@@ -9,17 +9,34 @@ export function passagesOfWork(passages: Passage[], workId: string): Passage[] {
   return passages.filter((p) => p.workId === workId).sort((a, b) => a.order - b.order)
 }
 
-/** 今日队列：要背、已到期。先按到期日，再按熟练度升序 */
-export function duePassages(passages: Passage[], today: string): Passage[] {
-  return passages
-    .filter((p) => p.isRecite && isDue(p.srs, today))
+/** 篇级排期的兜底：老数据没有 srs 时按「今天到期」处理 */
+function workSrs(work: Work, today: string) {
+  return work.srs ?? { ...createSrsState(today) }
+}
+
+/**
+ * 今日队列：以「篇」为单位——该篇有要背的段，且篇级排期已到。
+ * 先按到期日，再按熟练度升序。
+ */
+export function dueWorks(works: Work[], passages: Passage[], today: string): Work[] {
+  const reciteByWork = new Set(passages.filter((p) => p.isRecite).map((p) => p.workId))
+  return works
+    .filter((w) => reciteByWork.has(w.id))
+    .map((w) => ({ work: w, srs: workSrs(w, today) }))
+    .filter((entry) => isDue(entry.srs, today))
     .sort((a, b) => {
       if (a.srs.dueAt !== b.srs.dueAt) return a.srs.dueAt < b.srs.dueAt ? -1 : 1
       const ma = masteryScore(a.srs)
       const mb = masteryScore(b.srs)
       if (ma !== mb) return ma - mb
-      return a.order - b.order
+      return a.work.createdAt - b.work.createdAt
     })
+    .map((entry) => entry.work)
+}
+
+/** 该篇在复习时会出现的内容：只要背的段，按顺序 */
+export function recitePassagesOf(passages: Passage[], workId: string): Passage[] {
+  return passagesOfWork(passages, workId).filter((p) => p.isRecite)
 }
 
 export interface WorkProgress {
@@ -42,41 +59,39 @@ export function workProgress(
 ): WorkProgress {
   const items = passagesOfWork(passages, work.id)
   const recite = items.filter((p) => p.isRecite)
-  const reviewed = recite.filter((p) => p.srs.history.length > 0)
-  const mastery = recite.length
-    ? Math.round(recite.reduce((sum, p) => sum + masteryScore(p.srs), 0) / recite.length)
-    : 0
-  const lastReviewedAt =
-    items
-      .map((p) => p.srs.lastReviewedAt)
-      .filter((v): v is string => !!v)
-      .sort()
-      .pop() ?? null
+  const srs = workSrs(work, today)
   return {
     work,
     total: items.length,
     reciteCount: recite.length,
-    reviewedCount: reviewed.length,
-    dueCount: recite.filter((p) => isDue(p.srs, today)).length,
+    // 篇级：复习一次就算「已背」，段数只用来显示这一篇有多少段要背
+    reviewedCount: srs.history.length > 0 ? recite.length : 0,
+    dueCount: recite.length > 0 && isDue(srs, today) ? recite.length : 0,
     audioCount: items.filter((p) => p.audioId).length,
-    mastery,
-    masteredCount: recite.filter((p) => masteryScore(p.srs) >= MASTERED_THRESHOLD).length,
-    reviewedTotal: items.reduce((sum, p) => sum + p.srs.history.length, 0),
-    lastReviewedAt,
+    mastery: recite.length ? masteryScore(srs) : 0,
+    masteredCount: recite.length && masteryScore(srs) >= MASTERED_THRESHOLD ? recite.length : 0,
+    reviewedTotal: srs.history.length,
+    lastReviewedAt: srs.lastReviewedAt,
   }
 }
 
 export interface OverallStats {
   totalWorks: number
   reciteWorks: number
+  /** 复习过的篇数 */
   startedWorks: number
+  /** 已背篇目：至少完成过一次复习的篇 */
   finishedWorks: number
   totalPassages: number
   recitePassages: number
-  masteredPassages: number
-  dueCount: number
-  reviewedToday: number
+  /** 精熟的篇数 */
+  masteredWorks: number
+  /** 今日待复习：篇数 */
   dueWorks: number
+  /** 今天已完成：篇数 */
+  reviewedToday: number
+  /** 今日待复习篇里一共还有多少段 */
+  duePassages: number
   totalReviews: number
   averageMastery: number
   bandCounts: { new: number; learning: number; familiar: number; mastered: number }
@@ -90,31 +105,38 @@ export function overallStats(
 ): OverallStats {
   const recite = passages.filter((p) => p.isRecite)
   const bandCounts = { new: 0, learning: 0, familiar: 0, mastered: 0 }
-  for (const p of recite) {
-    const score = masteryScore(p.srs)
+  const reciteWorks = works.filter((w) => passages.some((p) => p.workId === w.id && p.isRecite))
+  for (const work of reciteWorks) {
+    const score = masteryScore(workSrs(work, today))
     if (score <= 0) bandCounts.new += 1
     else if (score < 40) bandCounts.learning += 1
     else if (score < MASTERED_THRESHOLD) bandCounts.familiar += 1
     else bandCounts.mastered += 1
   }
-  const progressList = works.map((w) => workProgress(w, passages, today))
-  const dueList = duePassages(passages, today)
+  const dueList = dueWorks(works, passages, today)
+  const duePassageCount = dueList.reduce(
+    (sum, work) => sum + recitePassagesOf(passages, work.id).length,
+    0,
+  )
   const todayStat = dailyStats.find((s) => s.date === today)
+  const reviewedWorks = reciteWorks.filter((w) => workSrs(w, today).history.length > 0)
   return {
     totalWorks: works.length,
-    reciteWorks: works.filter((w) => passages.some((p) => p.workId === w.id && p.isRecite)).length,
-    startedWorks: progressList.filter((w) => w.reviewedCount > 0).length,
-    finishedWorks: progressList.filter((w) => w.reciteCount > 0 && w.reviewedCount === w.reciteCount)
-      .length,
+    reciteWorks: reciteWorks.length,
+    startedWorks: reviewedWorks.length,
+    finishedWorks: reviewedWorks.length,
     totalPassages: passages.length,
     recitePassages: recite.length,
-    masteredPassages: bandCounts.mastered,
-    dueCount: dueList.length,
+    masteredWorks: bandCounts.mastered,
+    dueWorks: dueList.length,
     reviewedToday: todayStat?.reviewedCount ?? 0,
-    dueWorks: new Set(dueList.map((p) => p.workId)).size,
+    duePassages: duePassageCount,
     totalReviews: dailyStats.reduce((sum, s) => sum + s.reviewedCount, 0),
-    averageMastery: recite.length
-      ? Math.round(recite.reduce((sum, p) => sum + masteryScore(p.srs), 0) / recite.length)
+    averageMastery: reciteWorks.length
+      ? Math.round(
+          reciteWorks.reduce((sum, w) => sum + masteryScore(workSrs(w, today)), 0) /
+            reciteWorks.length,
+        )
       : 0,
     bandCounts,
   }

@@ -59,20 +59,24 @@ export default function StatsPanel({ open, onClose }: StatsPanelProps) {
     <Sheet open={open} onClose={onClose} title="统计面板">
       <div className="space-y-6">
         <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-          <StatCell label="今日待复习" value={stats.dueCount} hint={`${stats.dueWorks} 篇`} />
+          <StatCell
+            label="今日待复习"
+            value={stats.dueWorks}
+            hint={`共 ${stats.duePassages} 段`}
+          />
           <StatCell
             label="今日已完成"
             value={stats.reviewedToday}
-            hint={todayStat?.checkedIn ? '已打卡' : '未打卡'}
+            hint={todayStat?.checkedIn ? '已打卡' : '篇'}
           />
-          <StatCell label="待复习总数" value={stats.dueCount} hint="含逾期" />
+          <StatCell label="要背篇目" value={stats.reciteWorks} hint="含未开始" />
           <StatCell
             label={`已掌握（≥${MASTERED_THRESHOLD}分）`}
-            value={stats.masteredPassages}
-            hint={`要背 ${stats.recitePassages} 段`}
+            value={stats.masteredWorks}
+            hint={`共 ${stats.reciteWorks} 篇`}
           />
-          <StatCell label="已背篇目" value={stats.finishedWorks} hint={`开始 ${stats.startedWorks} 篇`} />
-          <StatCell label="累计复习" value={stats.totalReviews} hint="次" />
+          <StatCell label="已背篇目" value={stats.finishedWorks} hint="复习过至少一次" />
+          <StatCell label="累计复习" value={stats.totalReviews} hint="篇次" />
         </section>
 
         <section className="space-y-3">
@@ -85,7 +89,7 @@ export default function StatsPanel({ open, onClose }: StatsPanelProps) {
               { key: 'new', label: '未开始', cls: 'bg-ink-pale' },
             ].map((row) => {
               const count = stats.bandCounts[row.key as keyof typeof stats.bandCounts]
-              const percent = stats.recitePassages ? (count / stats.recitePassages) * 100 : 0
+              const percent = stats.reciteWorks ? (count / stats.reciteWorks) * 100 : 0
               return (
                 <div key={row.key} className="flex items-center gap-3">
                   <span className="w-12 shrink-0 text-xs text-ink-faint">{row.label}</span>
@@ -100,8 +104,8 @@ export default function StatsPanel({ open, onClose }: StatsPanelProps) {
             })}
           </div>
           <p className="meta">
-            平均熟练度 {stats.averageMastery} 分（要背 {stats.recitePassages} 段 / 共{' '}
-            {stats.totalPassages} 段）
+            平均熟练度 {stats.averageMastery} 分（按篇：要背 {stats.reciteWorks} 篇 / 共{' '}
+            {stats.totalWorks} 篇，{stats.recitePassages} 段）
           </p>
         </section>
 

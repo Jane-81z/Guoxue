@@ -54,7 +54,10 @@ interface AppState {
   uploadAudio: (passageId: string, file: File) => Promise<void>
   uploadAudioBatch: (items: { passageId: string; file: File }[]) => Promise<void>
   deleteAudio: (passageId: string) => Promise<void>
-  ratePassage: (passageId: string, rating: RatingKey) => Promise<void>
+  /** 评价一整篇：更新篇级排期 + 按篇计入当日统计 */
+  rateWork: (workId: string, rating: RatingKey) => Promise<void>
+  /** 清空全部复习记录（原文与录音保留） */
+  resetReviewRecords: () => Promise<void>
   updateSettings: (patch: Partial<Settings>) => Promise<void>
   clearAll: () => Promise<void>
   exportJson: () => Promise<void>
@@ -82,6 +85,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   init: async () => {
     try {
+      // 升级到「按篇复习」时，旧记录一概作数不了：一次性清空排期与历史
+      await repo.migrateToWorkReview()
       const snapshot = await repo.loadSnapshot()
       set({ ...snapshot, status: 'ready', error: null })
     } catch (err) {
@@ -201,14 +206,20 @@ export const useAppStore = create<AppState>()((set, get) => ({
     get().notify('已删除录音', 'success')
   },
 
-  ratePassage: async (passageId, rating) => {
-    await repo.reviewPassage(passageId, rating)
+  rateWork: async (workId, rating) => {
+    await repo.reviewWork(workId, rating)
     const checked = await repo.checkInIfDone()
     await get().refresh()
     if (checked) {
       set({ checkInFlash: Date.now() })
       get().notify('今日任务全部完成，已自动打卡', 'success')
     }
+  },
+
+  resetReviewRecords: async () => {
+    await repo.resetAllReviewRecords()
+    await get().refresh()
+    get().notify('已清空全部复习记录，所有篇目按新卡重新开始', 'success')
   },
 
   updateSettings: async (patch) => {

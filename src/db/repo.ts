@@ -25,6 +25,7 @@ import {
 } from '../lib/backup'
 
 export const DEFAULT_SETTINGS: Settings = {
+  reviewModel: 'work',
   theme: DEFAULT_THEME_ID,
   sync: DEFAULT_SYNC_CONFIG,
   recitePace: 150,
@@ -138,6 +139,7 @@ export async function createWork(input: ImportWorkInput): Promise<{ work: Work; 
     tags: (input.tags ?? []).map((t) => t.trim()).filter(Boolean),
     createdAt: now,
     updatedAt: now,
+    srs: createSrsState(today),
   }
   const passages: Passage[] = input.lines.map((text, index) => ({
     id: newId(),
@@ -149,6 +151,8 @@ export async function createWork(input: ImportWorkInput): Promise<{ work: Work; 
     pinyinCache: buildPinyinCache(text),
     note: '',
     audioId: null,
+    audioStartMs: null,
+    audioEndMs: null,
     srs: createSrsState(today),
     createdAt: now,
     updatedAt: now,
@@ -217,6 +221,8 @@ export async function splitPassage(passageId: string, lines: string[]): Promise<
         pinyinCache: buildPinyinCache(text),
         note: '',
         audioId: null,
+        audioStartMs: null,
+        audioEndMs: null,
         srs: createSrsState(today),
         createdAt: now,
         updatedAt: now,
@@ -271,6 +277,8 @@ export async function applyWorkText(workId: string, lines: string[]): Promise<Ma
         pinyinCache: buildPinyinCache(item.text),
         note: '',
         audioId: null,
+        audioStartMs: null,
+        audioEndMs: null,
         srs: createSrsState(today),
         createdAt: now,
         updatedAt: now,
@@ -316,12 +324,10 @@ export async function resetPassageProgress(passageId: string): Promise<void> {
 }
 
 export async function resetWorkProgress(workId: string): Promise<void> {
-  const today = todayKey()
-  const ids = (await db.passages.where('workId').equals(workId).toArray()).map((p) => p.id)
-  await db.transaction('rw', db.passages, async () => {
-    for (const id of ids) {
-      await db.passages.update(id, { srs: createSrsState(today), updatedAt: Date.now() })
-    }
+  // 排期在「篇」上，重置的是这一篇的复习记录
+  await db.works.update(workId, {
+    srs: createSrsState(todayKey()),
+    updatedAt: Date.now(),
   })
 }
 
@@ -388,17 +394,19 @@ export async function getAudioBlob(audioId: string): Promise<Blob | null> {
   return record?.blob ?? null
 }
 
-/** 评价一张卡：更新 SM-2 排期并累加当日统计 */
-export async function reviewPassage(
-  passageId: string,
+/**
+ * 评价**一整篇**：更新篇级 SM-2 排期，并把当日统计 +1（统计口径按篇）。
+ */
+export async function reviewWork(
+  workId: string,
   rating: RatingKey,
   today = todayKey(),
 ): Promise<void> {
-  await db.transaction('rw', db.passages, db.dailyStats, async () => {
-    const passage = await db.passages.get(passageId)
-    if (!passage) return
-    await db.passages.update(passageId, {
-      srs: schedule(passage.srs, rating, today),
+  await db.transaction('rw', db.works, db.dailyStats, async () => {
+    const work = await db.works.get(workId)
+    if (!work) return
+    await db.works.update(workId, {
+      srs: schedule(work.srs ?? createSrsState(today), rating, today),
       updatedAt: Date.now(),
     })
     const stat = (await db.dailyStats.get(today)) ?? emptyDailyStat(today)
@@ -406,23 +414,57 @@ export async function reviewPassage(
       ...stat,
       reviewedCount: stat.reviewedCount + 1,
       ratings: { ...stat.ratings, [rating]: (stat.ratings[rating] ?? 0) + 1 },
-      workIds: stat.workIds.includes(passage.workId)
-        ? stat.workIds
-        : [...stat.workIds, passage.workId],
+      workIds: stat.workIds.includes(workId) ? stat.workIds : [...stat.workIds, workId],
       updatedAt: Date.now(),
     }
     await db.dailyStats.put(next)
   })
 }
 
-/** 所有待背段落都评完分后自动打卡 */
+/** 今天到期的篇（要背段数 > 0 且排期已到） */
+async function dueWorks(today: string): Promise<Work[]> {
+  const [works, passages] = await Promise.all([db.works.toArray(), db.passages.toArray()])
+  const reciteByWork = new Set(passages.filter((p) => p.isRecite).map((p) => p.workId))
+  return works.filter((w) => reciteByWork.has(w.id) && (w.srs?.dueAt ?? today) <= today)
+}
+
+/** 当天到期的篇全部评完 → 自动打卡 */
 export async function checkInIfDone(today = todayKey()): Promise<boolean> {
-  const passages = await db.passages.toArray()
-  const remaining = passages.filter((p) => p.isRecite && p.srs.dueAt <= today)
+  const remaining = await dueWorks(today)
   if (remaining.length > 0) return false
   const stat = await db.dailyStats.get(today)
   if (!stat || stat.reviewedCount === 0 || stat.checkedIn) return false
   await db.dailyStats.put({ ...stat, checkedIn: true, updatedAt: Date.now() })
+  return true
+}
+
+/**
+ * 清空全部复习记录：每篇排期复位成新卡，段落级历史一并清掉，热力图与打卡归零。
+ * 原文、拼音、注释、要背标记、录音全部保留。
+ */
+export async function resetAllReviewRecords(): Promise<void> {
+  const today = todayKey()
+  const [works, passages] = await Promise.all([db.works.toArray(), db.passages.toArray()])
+  await db.transaction('rw', db.works, db.passages, db.dailyStats, async () => {
+    for (const work of works) {
+      await db.works.update(work.id, { srs: createSrsState(today), updatedAt: Date.now() })
+    }
+    for (const passage of passages) {
+      await db.passages.update(passage.id, { srs: createSrsState(today), updatedAt: Date.now() })
+    }
+    await db.dailyStats.clear()
+  })
+}
+
+/**
+ * 一次性升级：复习单位从「段」改成「篇」。
+ * 按使用者的决定，旧记录一概不作数——每篇、每段都按新卡起步，历史与打卡清空。
+ */
+export async function migrateToWorkReview(): Promise<boolean> {
+  const settings = await getSettings()
+  if (settings.reviewModel === 'work') return false
+  await resetAllReviewRecords()
+  await saveSettings({ reviewModel: 'work' })
   return true
 }
 

@@ -594,7 +594,6 @@ function PassageRow({
   const patchPassage = useAppStore((s) => s.patchPassage)
   const savePassageEdit = useAppStore((s) => s.savePassageEdit)
   const removePassage = useAppStore((s) => s.removePassage)
-  const resetPassage = useAppStore((s) => s.resetPassage)
   const uploadAudio = useAppStore((s) => s.uploadAudio)
   const deleteAudio = useAppStore((s) => s.deleteAudio)
   const notify = useAppStore((s) => s.notify)
@@ -789,9 +788,6 @@ function PassageRow({
               }}
             >
               清除拼音修正
-            </button>
-            <button type="button" className="btn btn-ghost" onClick={() => void resetPassage(passage.id)}>
-              重置该段进度
             </button>
             {hasAudio ? (
               <button

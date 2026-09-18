@@ -104,6 +104,6 @@ test.describe('云同步 · GitHub Gist', () => {
     await page.goto('/library')
     await expect(page.locator('article').first()).toContainText('过期测试篇目')
     await page.goto('/review')
-    await expect(page.locator('.panel').first()).toContainText('今日需背 1 段')
+    await expect(page.locator('.panel').first()).toContainText('今天需背 1 篇')
   })
 })

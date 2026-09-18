@@ -51,10 +51,10 @@ test.describe('版式不变量（用户点名的那几条）', () => {
     await seedWork(page, { title: '长段测试', lines: [long] })
     await page.goto('/review')
     await startReciting(page)
-    await page.getByRole('button', { name: /点亮原文/ }).click()
+    await page.getByRole('button', { name: '提示下一段' }).click()
 
     // 原文框自己不是滚动容器
-    const inner = await page.locator('.text-body').evaluate((el) => ({
+    const inner = await page.locator('.text-body').first().evaluate((el) => ({
       client: el.clientHeight,
       scroll: el.scrollHeight,
     }))
@@ -62,7 +62,7 @@ test.describe('版式不变量（用户点名的那几条）', () => {
 
     // 滚到底：最后一行必须在评分键上方
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-    const text = await page.locator('.text-body').boundingBox()
+    const text = await page.locator('.text-body').first().boundingBox()
     const keypad = await page.locator('.keypad').first().boundingBox()
     expect(text && keypad).toBeTruthy()
     if (!text || !keypad) return

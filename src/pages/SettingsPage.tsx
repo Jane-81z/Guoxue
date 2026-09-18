@@ -121,6 +121,7 @@ export default function SettingsPage() {
   const exportAudio = useAppStore((s) => s.exportAudio)
   const importAudio = useAppStore((s) => s.importAudio)
   const clearAll = useAppStore((s) => s.clearAll)
+  const resetReviewRecords = useAppStore((s) => s.resetReviewRecords)
   const syncNow = useAppStore((s) => s.syncNow)
   const updateSync = useAppStore((s) => s.updateSync)
   const notify = useAppStore((s) => s.notify)
@@ -133,6 +134,7 @@ export default function SettingsPage() {
   )
   const [openBand, setOpenBand] = useState<string | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [confirmResetReview, setConfirmResetReview] = useState(false)
   const [clearWord, setClearWord] = useState('')
   const [pendingImport, setPendingImport] = useState<File | null>(null)
 
@@ -574,6 +576,13 @@ export default function SettingsPage() {
           }
         />
 
+        <Band
+          label="清空全部复习记录"
+          kicker="原文、拼音、注释、录音都保留"
+          hint="每篇按新卡重新开始；热力图与打卡归零"
+          action={<ActKey label="清空记录" onPress={() => setConfirmResetReview(true)} />}
+        />
+
         <p className="pb-2 pt-3 text-center text-[13px] leading-relaxed text-dim">
           数据只存在这台设备的浏览器里，不上传服务器。
           <br />
@@ -616,6 +625,19 @@ export default function SettingsPage() {
           if (file) void importJson(file)
         }}
         onCancel={() => setPendingImport(null)}
+      />
+
+      <Dialog
+        open={confirmResetReview}
+        title="清空全部复习记录？"
+        description="所有篇目的排期与历史会复位成新卡，热力图与打卡记录清空。原文、拼音、注释、要背标记与录音都保留。"
+        confirmText="清空记录"
+        danger
+        onConfirm={() => {
+          setConfirmResetReview(false)
+          void resetReviewRecords()
+        }}
+        onCancel={() => setConfirmResetReview(false)}
       />
 
       <Dialog

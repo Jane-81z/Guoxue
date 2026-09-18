@@ -23,6 +23,8 @@ function passage(id: string, text: string): Passage {
     pinyinCache: null,
     note: '',
     audioId: null,
+    audioStartMs: null,
+    audioEndMs: null,
     srs: {
       ease: 2.5,
       intervalDays: 0,

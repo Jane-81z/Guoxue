@@ -14,6 +14,8 @@ function makePassage(id: string, order: number, text: string, extras: Partial<Pa
     pinyinCache: null,
     note: '',
     audioId: null,
+    audioStartMs: null,
+    audioEndMs: null,
     srs: createSrsState('2026-09-17'),
     createdAt: 0,
     updatedAt: 0,

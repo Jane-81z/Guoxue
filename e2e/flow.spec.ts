@@ -123,20 +123,33 @@ test.describe('篇目页', () => {
       .fill('庆历六年，范仲淹应好友滕子京之请而作，借洞庭湖之景抒忧乐之志。')
     await page.getByRole('button', { name: '保存' }).click()
 
-    // 显示在标签下面（正文是唯一的，用它来判定）
+    // 显示在标签下面（限定在卡片内断言：编辑面板此时可能还没卸载完）
     await expect(
-      page.getByText('庆历六年，范仲淹应好友滕子京之请而作，借洞庭湖之景抒忧乐之志。'),
+      page.locator('article').getByText('庆历六年，范仲淹应好友滕子京之请而作，借洞庭湖之景抒忧乐之志。'),
     ).toBeVisible({ timeout: 15_000 })
 
     // 重载后仍在
     await page.reload()
     await expect(
-      page.getByText('庆历六年，范仲淹应好友滕子京之请而作，借洞庭湖之景抒忧乐之志。'),
+      page.locator('article').getByText('庆历六年，范仲淹应好友滕子京之请而作，借洞庭湖之景抒忧乐之志。'),
     ).toBeVisible()
 
     // 复习页不显示背景（背诵时只呈现原文）
     await page.goto('/review')
     await expect(page.getByText('庆历六年')).toHaveCount(0)
+  })
+
+  test('导入页就能直接填背景，导入后显示在篇目卡片上', async ({ page }) => {
+    await seedWork(page, {
+      title: '陋室铭',
+      dynasty: '唐',
+      author: '刘禹锡',
+      background: '刘禹锡被贬和州时所作，以陋室自况，托物言志。',
+      lines: ['山不在高，有仙则名。', '水不在深，有龙则灵。'],
+    })
+    await expect(
+      page.locator('article').getByText('刘禹锡被贬和州时所作，以陋室自况，托物言志。'),
+    ).toBeVisible({ timeout: 15_000 })
   })
 })
 

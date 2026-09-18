@@ -122,6 +122,8 @@ export interface ImportWorkInput {
   title: string
   author?: string
   dynasty?: string
+  /** 文章背景：作者、成文缘由、读这段要知道的事 */
+  background?: string
   tags?: string[]
   lines: string[]
   /** 与 lines 一一对应，true 表示要背 */
@@ -136,6 +138,7 @@ export async function createWork(input: ImportWorkInput): Promise<{ work: Work; 
     title: input.title.trim(),
     author: input.author?.trim() || undefined,
     dynasty: input.dynasty?.trim() || undefined,
+    background: input.background?.trim() || undefined,
     tags: (input.tags ?? []).map((t) => t.trim()).filter(Boolean),
     createdAt: now,
     updatedAt: now,

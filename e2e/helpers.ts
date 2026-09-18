@@ -4,6 +4,7 @@ export interface SeedWork {
   title: string
   dynasty?: string
   author?: string
+  background?: string
   /** 每行一段 */
   lines: string[]
   /** 第几行（从 0 起）设为「不用背」 */
@@ -16,6 +17,7 @@ export async function seedWork(page: Page, work: SeedWork): Promise<void> {
   await page.fill('#work-title', work.title)
   if (work.dynasty) await page.fill('#work-dynasty', work.dynasty)
   if (work.author) await page.fill('#work-author', work.author)
+  if (work.background) await page.fill('#work-background', work.background)
   await page.fill('#raw-text', work.lines.join('\n'))
 
   for (const index of work.skipLines ?? []) {

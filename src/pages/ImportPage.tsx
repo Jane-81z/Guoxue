@@ -21,6 +21,7 @@ export default function ImportPage() {
   const [author, setAuthor] = useState('')
   const [dynasty, setDynasty] = useState('')
   const [tags, setTags] = useState('')
+  const [background, setBackground] = useState('')
   const [raw, setRaw] = useState('')
   const [lines, setLines] = useState<DraftLine[]>([])
   const [saving, setSaving] = useState(false)
@@ -84,6 +85,7 @@ export default function ImportPage() {
         title,
         author,
         dynasty,
+        background,
         tags: tags.split(/[,，、\s]+/).filter(Boolean),
         lines: lines.map((l) => l.text),
         reciteFlags: lines.map((l) => l.recite),
@@ -156,6 +158,18 @@ export default function ImportPage() {
               placeholder="四书、必背（用逗号分隔）"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="work-background">
+              背景
+            </label>
+            <textarea
+              id="work-background"
+              className="field min-h-[92px] text-[15px] leading-relaxed"
+              placeholder="可留空。贴文章背景：作者与朝代、成文缘由、读这段要知道的事。只显示在篇目页，复习时不显示。"
+              value={background}
+              onChange={(e) => setBackground(e.target.value)}
             />
           </div>
         </section>

@@ -105,6 +105,39 @@ test.describe('篇目页', () => {
     await row.getByRole('button', { name: '编辑' }).click()
     await expect(page.getByRole('button', { name: '删除该段' })).toBeVisible()
   })
+
+  test('篇目背景：贴在标签下面、重载后还在、复习页不显示', async ({ page }) => {
+    await seedWork(page, {
+      title: '岳阳楼记',
+      dynasty: '宋',
+      author: '范仲淹',
+      lines: ['先天下之忧而忧，后天下之乐而乐。'],
+    })
+    await page.goto('/library')
+
+    // 空的时候是一个虚线占位，点它进编辑面板
+    await expect(page.getByText('＋ 贴一段背景（作者、朝代、写作缘由…）')).toBeVisible()
+    await page.getByRole('button', { name: /贴一段背景/ }).click()
+    await page
+      .getByLabel('背景')
+      .fill('庆历六年，范仲淹应好友滕子京之请而作，借洞庭湖之景抒忧乐之志。')
+    await page.getByRole('button', { name: '保存' }).click()
+
+    // 显示在标签下面（正文是唯一的，用它来判定）
+    await expect(
+      page.getByText('庆历六年，范仲淹应好友滕子京之请而作，借洞庭湖之景抒忧乐之志。'),
+    ).toBeVisible({ timeout: 15_000 })
+
+    // 重载后仍在
+    await page.reload()
+    await expect(
+      page.getByText('庆历六年，范仲淹应好友滕子京之请而作，借洞庭湖之景抒忧乐之志。'),
+    ).toBeVisible()
+
+    // 复习页不显示背景（背诵时只呈现原文）
+    await page.goto('/review')
+    await expect(page.getByText('庆历六年')).toHaveCount(0)
+  })
 })
 
 test.describe('设置页', () => {

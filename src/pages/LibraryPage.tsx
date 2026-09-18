@@ -332,6 +332,29 @@ function WorkCard({
               .filter(Boolean)
               .join('・')}
           </p>
+
+          {/* 背景：贴文章背景（作者、成文缘由、读这段要知道的事），显示在标签下面 */}
+          {work.background ? (
+            <div
+              className="mt-2.5 bg-well px-3 py-2"
+              style={{ borderRadius: 'var(--c-radius-sm)' }}
+            >
+              <p className="readout text-[10px] tracking-[0.2em] text-dim">背景</p>
+              <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-fg-soft">
+                {work.background}
+              </p>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="mt-2.5 w-full border border-dashed border-hairline px-3 py-2 text-left text-[13px] text-dim active:bg-well"
+              style={{ borderRadius: 'var(--c-radius-sm)' }}
+              onClick={() => setMetaOpen(true)}
+            >
+              ＋ 贴一段背景（作者、朝代、写作缘由…）
+            </button>
+          )}
+
           {/* 一列段码：要背的每一段一根，已背的点亮成绿 */}
           <div className="mt-2.5 flex items-center gap-2">
             <span className="flex flex-1 flex-wrap gap-[3px]">
@@ -530,6 +553,7 @@ function WorkMetaEditor({
   const [author, setAuthor] = useState(work.author ?? '')
   const [dynasty, setDynasty] = useState(work.dynasty ?? '')
   const [tags, setTags] = useState(work.tags.join('、'))
+  const [background, setBackground] = useState(work.background ?? '')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -538,6 +562,7 @@ function WorkMetaEditor({
     setAuthor(work.author ?? '')
     setDynasty(work.dynasty ?? '')
     setTags(work.tags.join('、'))
+    setBackground(work.background ?? '')
   }, [open, work])
 
   const save = async () => {
@@ -551,6 +576,7 @@ function WorkMetaEditor({
         title: title.trim(),
         author: author.trim(),
         dynasty: dynasty.trim(),
+        background: background.trim(),
         tags: tags
           .split(/[,，、\s]+/)
           .map((tag) => tag.trim())
@@ -568,7 +594,7 @@ function WorkMetaEditor({
       open={open}
       onClose={onClose}
       title="编辑篇目信息"
-      subtitle="只改篇名、朝代、作者与标签"
+      subtitle="篇名、朝代、作者、标签与背景"
       footer={
         <div className="flex gap-2">
           <button type="button" className="btn btn-ghost flex-1" onClick={onClose}>
@@ -632,6 +658,21 @@ function WorkMetaEditor({
             value={tags}
             onChange={(event) => setTags(event.target.value)}
           />
+        </div>
+        <div>
+          <label className="label" htmlFor="meta-background">
+            背景
+          </label>
+          <textarea
+            id="meta-background"
+            className="field min-h-[140px] text-[15px] leading-relaxed"
+            placeholder="贴一段文章背景：作者与朝代、写这篇的缘由、读这段要知道的事。复习时不会显示，只在篇目页备查。"
+            value={background}
+            onChange={(event) => setBackground(event.target.value)}
+          />
+          <p className="mt-1.5 text-[13px] leading-relaxed text-dim">
+            背景只显示在篇目页，复习页仍然只呈现原文，不影响背诵。
+          </p>
         </div>
       </div>
     </Sheet>

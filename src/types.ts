@@ -27,6 +27,8 @@ export interface Work {
   title: string
   author?: string
   dynasty?: string
+  /** 文章背景：作者、成文缘由、读这段要知道的事 */
+  background?: string
   tags: string[]
   createdAt: number
   updatedAt: number

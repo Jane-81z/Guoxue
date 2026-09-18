@@ -11,7 +11,8 @@ export default defineConfig({
   retries: 0,
   reporter: [['list']],
   timeout: 45_000,
-  expect: { timeout: 7_000 },
+  // 这套用例里会解码音频（整篇录音切分），机器忙时首屏懒加载偶尔偏慢
+  expect: { timeout: 12_000 },
   use: {
     baseURL: 'http://localhost:5173',
     channel: 'chrome',

@@ -166,7 +166,7 @@ export async function createWork(input: ImportWorkInput): Promise<{ work: Work; 
 
 export async function updateWork(
   workId: string,
-  patch: Partial<Pick<Work, 'title' | 'author' | 'dynasty' | 'tags'>>,
+  patch: Partial<Pick<Work, 'title' | 'author' | 'dynasty' | 'tags' | 'background'>>,
 ): Promise<void> {
   await db.works.update(workId, { ...patch, updatedAt: Date.now() })
 }

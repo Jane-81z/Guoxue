@@ -36,7 +36,7 @@ interface AppState {
   importWork: (input: ImportWorkInput) => Promise<Work>
   updateWorkMeta: (
     workId: string,
-    patch: Partial<Pick<Work, 'title' | 'author' | 'dynasty' | 'tags'>>,
+    patch: Partial<Pick<Work, 'title' | 'author' | 'dynasty' | 'tags' | 'background'>>,
   ) => Promise<void>
   patchPassage: (
     passageId: string,

@@ -4,6 +4,9 @@ import * as repo from '../db/repo'
 import type { ImportWorkInput } from '../db/repo'
 import type { MatchPlan } from '../lib/match'
 import { splitPassages } from '../lib/split'
+import { DEFAULT_SYNC_ENDPOINT, isValidSyncCode, normalizeSyncCode } from '../lib/syncConfig'
+import { mergePayloads } from '../lib/syncMerge'
+import { pullPayload, pushPayload } from '../lib/syncClient'
 
 export type ToastTone = 'info' | 'success' | 'error'
 
@@ -57,6 +60,8 @@ interface AppState {
   importJson: (file: File) => Promise<void>
   exportAudio: () => Promise<void>
   importAudio: (file: File) => Promise<void>
+  syncNow: () => Promise<void>
+  updateSync: (patch: Partial<Settings['sync']>) => Promise<void>
 }
 
 const FALLBACK_SETTINGS: Settings = repo.DEFAULT_SETTINGS
@@ -251,5 +256,41 @@ export const useAppStore = create<AppState>()((set, get) => ({
     if (result.missing) parts.push(`${result.missing} 段找不到对应段落`)
     if (result.skipped) parts.push(`${result.skipped} 个文件缺失`)
     get().notify(parts.join('，'), result.missing ? 'error' : 'success')
+  },
+
+  /** 一次完整同步：本地打包 → 拉远端 → 合并 → 写回本地 → 推回云端 */
+  syncNow: async () => {
+    const { settings } = get()
+    const code = normalizeSyncCode(settings.sync.code)
+    if (!isValidSyncCode(code)) {
+      get().notify('请先设置同步码（至少 8 位）', 'error')
+      return
+    }
+    const endpoint = settings.sync.endpoint || DEFAULT_SYNC_ENDPOINT
+    try {
+      const local = await repo.loadSyncPayload()
+      const remote = await pullPayload(endpoint, code)
+      const { payload, pulledIn, purged } = mergePayloads(local, remote)
+      await repo.applySyncPayload(payload)
+      await pushPayload(endpoint, code, payload)
+      const next = await repo.saveSettings({
+        sync: { ...settings.sync, code, endpoint, lastSyncedAt: Date.now() },
+      })
+      set({ settings: next })
+      await get().refresh()
+      const parts = [`已同步：拉取 ${pulledIn} 条`]
+      if (purged) parts.push(`清理 ${purged} 条已删除`)
+      parts.push(`云端现有 ${payload.works.length} 篇 / ${payload.passages.length} 段`)
+      get().notify(parts.join('，'), 'success')
+    } catch (err) {
+      get().notify(err instanceof Error ? err.message : '同步失败', 'error')
+    }
+  },
+
+  updateSync: async (patch) => {
+    const current = get().settings.sync
+    const merged = { ...current, ...patch }
+    if (patch.code !== undefined) merged.code = normalizeSyncCode(patch.code)
+    await get().updateSettings({ sync: merged })
   },
 }))

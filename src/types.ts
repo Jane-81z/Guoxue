@@ -99,6 +99,8 @@ export interface PlayerPrefs {
 export interface Settings {
   /** 视觉方向 id，见 src/theme/themes.ts */
   theme: string
+  /** 云同步配置，见 src/lib/syncConfig.ts */
+  sync: import('./lib/syncConfig').SyncConfig
   /** 背诵速度：字/分钟，用于估算今日用时 */
   recitePace: number
   /** HH:mm */

@@ -19,10 +19,19 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'mobile-chrome', use: { ...devices['Desktop Chrome'], channel: 'chrome' } }],
-  webServer: {
-    command: 'npm run dev -- --port 5173 --strictPort',
-    url: 'http://localhost:5173',
-    reuseExistingServer: true,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: 'npm run dev -- --port 5173 --strictPort',
+      url: 'http://localhost:5173',
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      // 端到端测试用的同步服务替身（行为与 Cloudflare Pages Function 一致）
+      command: 'node scripts/dev/mock-sync-server.mjs 4190',
+      url: 'http://localhost:4190/health',
+      reuseExistingServer: true,
+      timeout: 30_000,
+    },
+  ],
 })

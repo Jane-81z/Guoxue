@@ -10,6 +10,13 @@ import { downloadBlob } from '../lib/backup'
 import { todayKey } from '../lib/date'
 import { findTheme } from '../theme/themes'
 import { MAX_RECITE_PACE, MIN_RECITE_PACE } from '../lib/estimate'
+import {
+  DEFAULT_SYNC_ENDPOINT,
+  formatSyncCode,
+  generateSyncCode,
+  isValidSyncCode,
+} from '../lib/syncConfig'
+import { formatRelativeTime } from '../lib/selectors'
 
 const APP_VERSION = '0.1.0'
 
@@ -89,6 +96,8 @@ export default function SettingsPage() {
   const exportAudio = useAppStore((s) => s.exportAudio)
   const importAudio = useAppStore((s) => s.importAudio)
   const clearAll = useAppStore((s) => s.clearAll)
+  const syncNow = useAppStore((s) => s.syncNow)
+  const updateSync = useAppStore((s) => s.updateSync)
   const notify = useAppStore((s) => s.notify)
   const works = useAppStore((s) => s.works)
   const passages = useAppStore((s) => s.passages)
@@ -280,6 +289,92 @@ export default function SettingsPage() {
           label="导出日历提醒"
           kicker="ICS · 一次导入长期有效"
           action={<ActKey label="导出" onPress={downloadIcs} />}
+        />
+
+        <GroupLabel>云同步 SYNC</GroupLabel>
+        <Band
+          label="同步码"
+          kicker="两端填同一个码即同一份数据"
+          value={settings.sync.code ? formatSyncCode(settings.sync.code) : '未设置'}
+          tone={settings.sync.code ? 'default' : 'dim'}
+          open={openBand === 'synccode'}
+          onToggle={() => toggleBand('synccode')}
+        >
+          <div className="space-y-3">
+            <input
+              aria-label="同步码"
+              className="field readout tracking-[0.2em]"
+              placeholder="输入另一端显示的同步码"
+              value={formatSyncCode(settings.sync.code)}
+              onChange={(e) => void updateSync({ code: e.target.value })}
+            />
+            <input
+              aria-label="同步服务地址"
+              className="field readout text-[13px]"
+              placeholder={DEFAULT_SYNC_ENDPOINT}
+              value={settings.sync.endpoint}
+              onChange={(e) => void updateSync({ endpoint: e.target.value.trim() })}
+            />
+            <div className="flex flex-wrap gap-2">
+              <ActKey
+                label="生成随机码"
+                onPress={() => {
+                  void updateSync({ code: generateSyncCode() })
+                }}
+              />
+              {settings.sync.code ? (
+                <ActKey label="清空" onPress={() => void updateSync({ code: '' })} />
+              ) : null}
+            </div>
+            <p className="text-[13px] leading-relaxed text-dim">
+              同步码就是钥匙——电脑上生成一个，手机上输入同一个，两边的篇目、拼音、注释与复习进度就会合并到一起。
+              没有账号、没有密码，所以码要自己收好：知道这个码的人就能读写你的数据。
+            </p>
+            <p className="readout text-[10px] tracking-[0.14em] text-dim">
+              ENDPOINT {settings.sync.endpoint || DEFAULT_SYNC_ENDPOINT}
+            </p>
+          </div>
+        </Band>
+        <Band
+          label="立即同步"
+          kicker="双向合并 · 云端与本地取较新"
+          hint={
+            settings.sync.lastSyncedAt
+              ? `上次同步 ${formatRelativeTime(settings.sync.lastSyncedAt)}`
+              : '还没有同步过'
+          }
+          action={
+            <ActKey
+              label={isValidSyncCode(settings.sync.code) ? '同步' : '先设同步码'}
+              onPress={() => {
+                if (!isValidSyncCode(settings.sync.code)) {
+                  setOpenBand('synccode')
+                  notify('请先设置同步码（至少 8 位）', 'error')
+                  return
+                }
+                void syncNow()
+              }}
+            />
+          }
+        />
+        <Band
+          label="自动同步"
+          kicker="每次打开与改动后"
+          control={
+            <LampKey
+              name="自动同步"
+              on={settings.sync.auto}
+              onLabel="ON"
+              offLabel="OFF"
+              onPress={() => void updateSync({ auto: !settings.sync.auto })}
+            />
+          }
+        />
+        <Band
+          label="上次同步"
+          kicker="LOCAL → CLOUD"
+          value={settings.sync.lastSyncedAt ? formatRelativeTime(settings.sync.lastSyncedAt) : '—'}
+          tone={settings.sync.lastSyncedAt ? 'done' : 'dim'}
         />
 
         <GroupLabel>数据 DATA</GroupLabel>

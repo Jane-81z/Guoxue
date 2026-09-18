@@ -19,6 +19,7 @@ class AppDatabase extends Dexie {
   audioBlobs!: Table<AudioBlobRecord, string>
   dailyStats!: Table<DailyStat, string>
   settings!: Table<SettingsRecord, string>
+  tombstones!: Table<{ id: string; deletedAt: number }, string>
 
   constructor() {
     super('guoxue-recitation')
@@ -29,6 +30,10 @@ class AppDatabase extends Dexie {
       audioBlobs: 'id',
       dailyStats: 'date',
       settings: 'key',
+    })
+    // v2：加入删除墓碑，让「删掉的东西」不会在同步后被另一端带回来
+    this.version(2).stores({
+      tombstones: 'id, deletedAt',
     })
   }
 }

@@ -1,7 +1,8 @@
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, useEffect, useRef } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import { useAppStore } from './store/useAppStore'
+import { isValidSyncCode } from './lib/syncConfig'
 
 const ReviewPage = lazy(() => import('./pages/ReviewPage'))
 const LibraryPage = lazy(() => import('./pages/LibraryPage'))
@@ -14,10 +15,21 @@ export default function App() {
   const status = useAppStore((s) => s.status)
   const error = useAppStore((s) => s.error)
   const init = useAppStore((s) => s.init)
+  const syncAuto = useAppStore((s) => s.settings.sync.auto)
+  const syncCode = useAppStore((s) => s.settings.sync.code)
+  const syncNow = useAppStore((s) => s.syncNow)
 
   useEffect(() => {
     void init()
   }, [init])
+
+  // 启动时若开着自动同步，就先同步一次（把另一端在这期间做的改动拉过来）
+  const bootSynced = useRef(false)
+  useEffect(() => {
+    if (status !== 'ready' || bootSynced.current) return
+    bootSynced.current = true
+    if (syncAuto && isValidSyncCode(syncCode)) void syncNow()
+  }, [status, syncAuto, syncCode, syncNow])
 
   if (status === 'loading') {
     return (

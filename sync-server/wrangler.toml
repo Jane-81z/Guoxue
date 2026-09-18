@@ -1,0 +1,9 @@
+name = "guoxue-sync"
+compatibility_date = "2025-09-01"
+pages_build_output_dir = "public"
+
+# 部署前用 `npx wrangler kv namespace create GUOXUE_SYNC` 创建，
+# 把返回的 id 填到这里（见 README.md 的两条命令）。
+[[kv_namespaces]]
+binding = "GUOXUE_SYNC"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"

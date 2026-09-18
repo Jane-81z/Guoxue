@@ -13,6 +13,8 @@ import { buildPinyinCache } from '../lib/pinyin'
 import { createSrsState, schedule } from '../lib/srs'
 import { todayKey } from '../lib/date'
 import { planMatch, type MatchPlan } from '../lib/match'
+import { DEFAULT_SYNC_CONFIG } from '../lib/syncConfig'
+import { buildPayload, isPayload, type SyncPayload } from '../lib/syncMerge'
 import { DEFAULT_THEME_ID } from '../theme/themes'
 import {
   BACKUP_APP_ID,
@@ -24,6 +26,7 @@ import {
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: DEFAULT_THEME_ID,
+  sync: DEFAULT_SYNC_CONFIG,
   recitePace: 150,
   reminderTime: '20:00',
   fontScale: 1,
@@ -72,7 +75,19 @@ function mergeSettings(stored: Settings | undefined): Settings {
     ...DEFAULT_SETTINGS,
     ...stored,
     player: { ...DEFAULT_SETTINGS.player, ...(stored.player ?? {}) },
+    sync: { ...DEFAULT_SYNC_CONFIG, ...(stored.sync ?? {}) },
   }
+}
+
+/** 记下删除墓碑：同步时用它阻止「已删除的记录」被另一端带回来 */
+async function writeTombstones(ids: string[], deletedAt = Date.now()): Promise<void> {
+  if (!ids.length) return
+  await db.tombstones.bulkPut(ids.map((id) => ({ id, deletedAt })))
+}
+
+export async function listTombstones(): Promise<Record<string, number>> {
+  const rows = await db.tombstones.toArray()
+  return Object.fromEntries(rows.map((row) => [row.id, row.deletedAt]))
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -265,6 +280,9 @@ export async function applyWorkText(workId: string, lines: string[]): Promise<Ma
     await db.works.update(workId, { updatedAt: now })
   })
 
+  // 被删掉的段落在同步时需要墓碑，否则会被另一端带回来
+  await writeTombstones(removalIds, now)
+
   return plan
 }
 
@@ -278,6 +296,7 @@ export async function deletePassage(passageId: string): Promise<void> {
       await db.audioBlobs.delete(passage.audioId)
     }
   })
+  await writeTombstones([passageId])
 }
 
 export async function deleteWork(workId: string): Promise<void> {
@@ -289,6 +308,7 @@ export async function deleteWork(workId: string): Promise<void> {
     await db.audioBlobs.bulkDelete(audioIds)
     await db.works.delete(workId)
   })
+  await writeTombstones([workId, ...passages.map((p) => p.id)])
 }
 
 export async function resetPassageProgress(passageId: string): Promise<void> {
@@ -560,6 +580,46 @@ export async function clearAllData(): Promise<void> {
         db.dailyStats.clear(),
         db.settings.clear(),
       ])
+    },
+  )
+}
+
+// ——— 云同步：本地打包 / 应用合并结果 ———
+
+export async function loadSyncPayload(): Promise<SyncPayload> {
+  const snapshot = await loadSnapshot()
+  return buildPayload({
+    works: snapshot.works,
+    passages: snapshot.passages,
+    dailyStats: snapshot.dailyStats,
+    tombstones: await listTombstones(),
+  })
+}
+
+/**
+ * 把合并结果写回本地。录音不参与同步：段落上的 audioId 原样保留，
+ * 本机没有对应音频时播放会提示「录音数据缺失」，不会静默出错。
+ */
+export async function applySyncPayload(payload: SyncPayload): Promise<void> {
+  if (!isPayload(payload)) throw new Error('云端数据格式不认识')
+  await db.transaction(
+    'rw',
+    db.works,
+    db.passages,
+    db.dailyStats,
+    db.tombstones,
+    async () => {
+      await Promise.all([
+        db.works.clear(),
+        db.passages.clear(),
+        db.dailyStats.clear(),
+        db.tombstones.clear(),
+      ])
+      if (payload.works.length) await db.works.bulkPut(payload.works)
+      if (payload.passages.length) await db.passages.bulkPut(payload.passages)
+      if (payload.dailyStats.length) await db.dailyStats.bulkPut(payload.dailyStats)
+      const rows = Object.entries(payload.tombstones).map(([id, deletedAt]) => ({ id, deletedAt }))
+      if (rows.length) await db.tombstones.bulkPut(rows)
     },
   )
 }

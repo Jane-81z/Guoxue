@@ -8,6 +8,9 @@ interface PlayerState {
   workId: string | null
   index: number
   currentPassageId: string | null
+  /** 当前段在整篇音频里的区间（秒）；没有区间时 clipStart=0、clipEnd=null */
+  clipStart: number
+  clipEnd: number | null
   isPlaying: boolean
   isLoading: boolean
   currentTime: number
@@ -123,6 +126,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   workId: null,
   index: 0,
   currentPassageId: null,
+  clipStart: 0,
+  clipEnd: null,
   isPlaying: false,
   isLoading: false,
   currentTime: 0,
@@ -146,6 +151,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       queue: passageIds,
       index,
       currentPassageId: start,
+      clipStart: 0,
+      clipEnd: null,
       currentTime: start ? app.settings.player.positions[start] ?? 0 : 0,
       duration: 0,
       playCount: 0,
@@ -158,7 +165,17 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     if (!passage) return
     const queue = get().queue.includes(passageId) ? get().queue : [passageId]
     const index = Math.max(0, queue.indexOf(passageId))
-    set({ queue, index, currentPassageId: passageId, playCount: 0, error: null })
+    const clipStart = (passage.audioStartMs ?? 0) / 1000
+    const clipEnd = passage.audioEndMs != null ? passage.audioEndMs / 1000 : null
+    set({
+      queue,
+      index,
+      currentPassageId: passageId,
+      clipStart,
+      clipEnd,
+      playCount: 0,
+      error: null,
+    })
 
     if (!passage.audioId) {
       set({ error: '这一段还没有录音', isPlaying: false })
@@ -172,16 +189,20 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       const url = urlFor(passage.audioId, blob)
       if (audio.src !== url) await loadSource(audio, url)
       audio.playbackRate = get().rate
-      const resume = app.settings.player.positions[passageId] ?? 0
-      if (resume > 3 && Number.isFinite(audio.duration) && resume < audio.duration - 3) {
-        audio.currentTime = resume
+      // 位置按「段内相对时间」保存，避免整篇音频里各段互相干扰
+      const saved = app.settings.player.positions[passageId] ?? 0
+      const clipLength = (clipEnd ?? audio.duration) - clipStart
+      if (saved > 3 && Number.isFinite(clipLength) && saved < clipLength - 3) {
+        audio.currentTime = clipStart + saved
+      } else {
+        audio.currentTime = clipStart
       }
       await audio.play()
       set({
         isPlaying: true,
         isLoading: false,
-        duration: Number.isFinite(audio.duration) ? audio.duration : 0,
-        currentTime: audio.currentTime,
+        duration: Number.isFinite(clipLength) ? clipLength : 0,
+        currentTime: Math.max(0, audio.currentTime - clipStart),
         error: null,
       })
       if (get().workId) savePosition(true)
@@ -231,7 +252,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     if (!queue.length) return
     const audio = getAudio()
     if (currentTime > 4) {
-      audio.currentTime = 0
+      audio.currentTime = get().clipStart
       set({ currentTime: 0 })
       return
     }
@@ -241,9 +262,11 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
 
   seek: (time) => {
     const audio = getAudio()
-    if (!Number.isFinite(audio.duration)) return
-    audio.currentTime = Math.max(0, Math.min(time, audio.duration))
-    set({ currentTime: audio.currentTime })
+    const { clipStart, clipEnd } = get()
+    const limit = clipEnd != null ? clipEnd - clipStart : audio.duration - clipStart
+    const relative = Math.max(0, Math.min(time, Number.isFinite(limit) ? limit : time))
+    audio.currentTime = clipStart + relative
+    set({ currentTime: relative })
   },
 
   setRate: (rate) => {
@@ -278,13 +301,13 @@ function handleEnded() {
   const audio = getAudio()
   if (state.repeatCount > 1 && state.playCount + 1 < state.repeatCount) {
     usePlayerStore.setState({ playCount: state.playCount + 1 })
-    audio.currentTime = 0
+    audio.currentTime = state.clipStart
     void audio.play()
     return
   }
   usePlayerStore.setState({ playCount: 0 })
   if (state.mode === 'repeatOne') {
-    audio.currentTime = 0
+    audio.currentTime = state.clipStart
     void audio.play()
     return
   }
@@ -304,11 +327,21 @@ function handleEnded() {
 function setupAudioListeners() {
   const audio = getAudio()
   audio.addEventListener('timeupdate', () => {
-    usePlayerStore.setState({ currentTime: audio.currentTime })
+    const { clipStart, clipEnd } = usePlayerStore.getState()
+    const relative = Math.max(0, audio.currentTime - clipStart)
+    usePlayerStore.setState({ currentTime: relative })
+    // 整篇音频里的某一段：播到区间末尾就算这一段结束
+    if (clipEnd != null && audio.currentTime >= clipEnd - 0.05) {
+      audio.pause()
+      handleEnded()
+      return
+    }
     savePosition(false)
   })
   audio.addEventListener('durationchange', () => {
-    if (Number.isFinite(audio.duration)) usePlayerStore.setState({ duration: audio.duration })
+    const { clipStart, clipEnd } = usePlayerStore.getState()
+    const length = (clipEnd ?? audio.duration) - clipStart
+    if (Number.isFinite(length)) usePlayerStore.setState({ duration: length })
   })
   audio.addEventListener('play', () => usePlayerStore.setState({ isPlaying: true }))
   audio.addEventListener('pause', () => usePlayerStore.setState({ isPlaying: false }))

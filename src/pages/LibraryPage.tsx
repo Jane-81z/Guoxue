@@ -21,6 +21,9 @@ import { isDue, isMastered, masteryBand, masteryScore } from '../lib/srs'
 import { resolveTokens } from '../lib/pinyin'
 import { describePlan, planMatch, type MatchPlan } from '../lib/match'
 import { relativeDay } from '../lib/date'
+import AudioSplitSheet, { type SplitClip } from '../components/AudioSplitSheet'
+import { fileToEnvelope } from '../lib/audioEnvelope'
+import type { Envelope } from '../lib/audioSplit'
 import type { AudioAsset, Passage, Settings, Work } from '../types'
 
 type FilterKey = 'all' | 'due' | 'mastered' | 'audio'
@@ -254,6 +257,7 @@ function WorkCard({
   const passages = useAppStore((s) => s.passages)
   const rewriteWorkText = useAppStore((s) => s.rewriteWorkText)
   const uploadAudioBatch = useAppStore((s) => s.uploadAudioBatch)
+  const attachWorkAudio = useAppStore((s) => s.attachWorkAudio)
   const removeWork = useAppStore((s) => s.removeWork)
   const resetWork = useAppStore((s) => s.resetWork)
   const notify = useAppStore((s) => s.notify)
@@ -262,7 +266,14 @@ function WorkCard({
   const [metaOpen, setMetaOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [split, setSplit] = useState<{
+    file: File
+    url: string
+    envelope: Envelope
+  } | null>(null)
   const batchInputRef = useRef<HTMLInputElement>(null)
+  const wholeInputRef = useRef<HTMLInputElement>(null)
 
   const progress = workProgress(work, passages, today)
 
@@ -272,6 +283,26 @@ function WorkCard({
     await uploadAudioBatch(
       Array.from(files).map((file, index) => ({ passageId: targets[index].id, file })),
     )
+  }
+
+  /** 导入一整篇录音：先本地解码出包络，再进切分界面（不联网、不重新编码） */
+  const handleWholeAudio = async (files: FileList | null) => {
+    const file = files?.[0]
+    if (!file) return
+    setAnalyzing(true)
+    try {
+      const envelope = await fileToEnvelope(file)
+      setSplit({ file, url: URL.createObjectURL(file), envelope })
+    } catch (err) {
+      notify(err instanceof Error ? err.message : '音频解析失败', 'error')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  const closeSplit = () => {
+    if (split) URL.revokeObjectURL(split.url)
+    setSplit(null)
   }
 
   return (
@@ -359,6 +390,15 @@ function WorkCard({
               <IconMic className="h-3.5 w-3.5" />
               批量上传录音
             </button>
+            <button
+              type="button"
+              className="chip"
+              disabled={analyzing}
+              onClick={() => wholeInputRef.current?.click()}
+            >
+              <IconMic className="h-3.5 w-3.5" />
+              {analyzing ? '正在解析…' : '导入整篇录音'}
+            </button>
             <button type="button" className="chip" onClick={() => setConfirmReset(true)}>
               重置进度
             </button>
@@ -374,6 +414,7 @@ function WorkCard({
           <input
             ref={batchInputRef}
             type="file"
+            aria-label="批量上传录音"
             accept="audio/*"
             multiple
             className="hidden"
@@ -382,6 +423,33 @@ function WorkCard({
               e.target.value = ''
             }}
           />
+          <input
+            ref={wholeInputRef}
+            type="file"
+            aria-label="导入整篇录音"
+            accept="audio/*"
+            className="hidden"
+            onChange={(e) => {
+              void handleWholeAudio(e.target.files)
+              e.target.value = ''
+            }}
+          />
+
+          {split ? (
+            <AudioSplitSheet
+              open
+              fileName={split.file.name}
+              fileUrl={split.url}
+              envelope={split.envelope}
+              passages={items}
+              onClose={closeSplit}
+              onConfirm={(clips: SplitClip[]) => {
+                const { file } = split
+                closeSplit()
+                void attachWorkAudio(work.id, file, clips)
+              }}
+            />
+          ) : null}
 
           <ul className="space-y-2">
             {items.map((passage, index) => (
@@ -840,6 +908,7 @@ function PassageRow({
       <input
         ref={fileRef}
         type="file"
+        aria-label={`上传第 ${index + 1} 段录音`}
         accept="audio/*"
         className="hidden"
         onChange={(e) => {

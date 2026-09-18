@@ -42,7 +42,12 @@ export default function ReviewPage() {
   const pace = clampPace(settings.recitePace)
   const worksById = useMemo(() => workMap(works), [works])
   const audioDurationByPassage = useMemo(
-    () => new Map(audios.map((a) => [a.passageId, a.durationMs])),
+    () =>
+      new Map(
+        audios
+          .filter((a): a is typeof a & { passageId: string } => !!a.passageId)
+          .map((a) => [a.passageId, a.durationMs]),
+      ),
     [audios],
   )
 

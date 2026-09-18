@@ -53,6 +53,11 @@ interface AppState {
   resetWork: (workId: string) => Promise<void>
   uploadAudio: (passageId: string, file: File) => Promise<void>
   uploadAudioBatch: (items: { passageId: string; file: File }[]) => Promise<void>
+  attachWorkAudio: (
+    workId: string,
+    file: File,
+    clips: repo.WorkClip[],
+  ) => Promise<void>
   deleteAudio: (passageId: string) => Promise<void>
   /** 评价一整篇：更新篇级排期 + 按篇计入当日统计 */
   rateWork: (workId: string, rating: RatingKey) => Promise<void>
@@ -198,6 +203,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
     }
     await get().refresh()
     get().notify(`已上传 ${done} / ${items.length} 段录音`, done === items.length ? 'success' : 'error')
+  },
+
+  attachWorkAudio: async (workId, file, clips) => {
+    await repo.attachWorkAudio(workId, file, clips)
+    await get().refresh()
+    get().notify(`已导入整篇录音，切成 ${clips.length} 段`, 'success')
   },
 
   deleteAudio: async (passageId) => {

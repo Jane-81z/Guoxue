@@ -61,7 +61,8 @@ export interface Passage {
 /** 录音元数据（二进制单独存在 audioBlobs 表，避免一次性载入内存） */
 export interface AudioAsset {
   id: string
-  passageId: string
+  /** 段级录音指向该段；整篇录音为 null（多段共用同一文件的不同区间） */
+  passageId: string | null
   workId: string
   fileName: string
   mimeType: string

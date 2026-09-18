@@ -382,11 +382,68 @@ export async function removeAudio(passageId: string): Promise<void> {
   const passage = await db.passages.get(passageId)
   if (!passage?.audioId) return
   const audioId = passage.audioId
+  const siblings = await db.passages.where('audioId').equals(audioId).toArray()
   await db.transaction('rw', db.passages, db.audios, db.audioBlobs, async () => {
     await db.audios.delete(audioId)
     await db.audioBlobs.delete(audioId)
-    await db.passages.update(passageId, { audioId: null, updatedAt: Date.now() })
+    // 整篇录音被多段共用：删一次要清掉所有引用它的段落，避免留下悬空的区间
+    for (const item of siblings) {
+      await db.passages.update(item.id, {
+        audioId: null,
+        audioStartMs: null,
+        audioEndMs: null,
+        updatedAt: Date.now(),
+      })
+    }
   })
+}
+
+export interface WorkClip {
+  passageId: string
+  startMs: number
+  endMs: number
+}
+
+/**
+ * 导入**整篇录音**：一个音频文件 + 每段的起止区间（不重新编码，不重复存文件）。
+ * 会替换这一篇原有的录音（无论是整篇的还是逐段上传的）。
+ */
+export async function attachWorkAudio(
+  workId: string,
+  file: File,
+  clips: WorkClip[],
+): Promise<AudioAsset> {
+  const passages = await db.passages.where('workId').equals(workId).toArray()
+  const oldAudioIds = [...new Set(passages.map((p) => p.audioId).filter((v): v is string => !!v))]
+  const durationMs = await readAudioDuration(file)
+  const asset: AudioAsset = {
+    id: newId(),
+    passageId: null,
+    workId,
+    fileName: file.name,
+    mimeType: file.type || 'audio/mpeg',
+    sizeBytes: file.size,
+    durationMs,
+    createdAt: Date.now(),
+  }
+
+  await db.transaction('rw', db.passages, db.audios, db.audioBlobs, async () => {
+    for (const audioId of oldAudioIds) {
+      await db.audios.delete(audioId)
+      await db.audioBlobs.delete(audioId)
+    }
+    await db.audios.add(asset)
+    await db.audioBlobs.add({ id: asset.id, blob: file })
+    for (const clip of clips) {
+      await db.passages.update(clip.passageId, {
+        audioId: asset.id,
+        audioStartMs: Math.round(clip.startMs),
+        audioEndMs: Math.round(clip.endMs),
+        updatedAt: Date.now(),
+      })
+    }
+  })
+  return asset
 }
 
 export async function getAudioBlob(audioId: string): Promise<Blob | null> {
@@ -502,16 +559,22 @@ export async function importBackupJson(text: string): Promise<BackupV1> {
 const ZIP_MANIFEST = 'manifest.json'
 
 export async function exportAudioZip(): Promise<{ blob: Blob; count: number }> {
-  const [audios, works] = await Promise.all([db.audios.toArray(), db.works.toArray()])
+  const [audios, works, passages] = await Promise.all([
+    db.audios.toArray(),
+    db.works.toArray(),
+    db.passages.toArray(),
+  ])
   const zip = new JSZip()
   const workTitle = (id: string) => works.find((w) => w.id === id)?.title ?? '未命名'
   const files: {
     path: string
-    passageId: string
+    audioId: string
     workId: string
     fileName: string
     mimeType: string
     sizeBytes: number
+    /** 整篇录音：这个文件被哪些段落以哪段区间使用 */
+    clips: { passageId: string; startMs: number; endMs: number }[]
   }[] = []
 
   for (const asset of audios) {
@@ -519,15 +582,24 @@ export async function exportAudioZip(): Promise<{ blob: Blob; count: number }> {
     if (!record) continue
     const rawExt = asset.fileName.includes('.') ? asset.fileName.split('.').pop()! : 'm4a'
     const safeExt = rawExt.replace(/[^A-Za-z0-9]/g, '') || 'm4a'
-    const path = `audio/${workTitle(asset.workId)}/${asset.passageId}.${safeExt}`
+    const label = asset.passageId ?? 'whole'
+    const path = `audio/${workTitle(asset.workId)}/${label}.${safeExt}`
     zip.file(path, record.blob)
+    const clips = passages
+      .filter((p) => p.audioId === asset.id)
+      .map((p) => ({
+        passageId: p.id,
+        startMs: p.audioStartMs ?? 0,
+        endMs: p.audioEndMs ?? -1,
+      }))
     files.push({
       path,
-      passageId: asset.passageId,
+      audioId: asset.id,
       workId: asset.workId,
       fileName: asset.fileName,
       mimeType: asset.mimeType,
       sizeBytes: asset.sizeBytes,
+      clips,
     })
   }
 
@@ -559,11 +631,12 @@ export async function importAudioZip(file: File): Promise<AudioImportResult> {
     app?: string
     files?: {
       path: string
-      passageId: string
+      audioId: string
       workId: string
       fileName: string
       mimeType: string
       sizeBytes: number
+      clips: { passageId: string; startMs: number; endMs: number }[]
     }[]
   }
   if (manifest.app !== BACKUP_APP_ID || !Array.isArray(manifest.files)) {
@@ -574,8 +647,8 @@ export async function importAudioZip(file: File): Promise<AudioImportResult> {
   let missing = 0
   let skipped = 0
   for (const entry of manifest.files) {
-    const passage = await db.passages.get(entry.passageId)
-    if (!passage) {
+    const target = await db.passages.get(entry.clips[0]?.passageId ?? '')
+    if (!target) {
       missing += 1
       continue
     }
@@ -586,14 +659,16 @@ export async function importAudioZip(file: File): Promise<AudioImportResult> {
     }
     const blob = await zipEntry.async('blob')
     await db.transaction('rw', db.passages, db.audios, db.audioBlobs, async () => {
-      if (passage.audioId) {
-        await db.audios.delete(passage.audioId)
-        await db.audioBlobs.delete(passage.audioId)
+      const existing = await db.passages.get(target.id)
+      if (existing?.audioId) {
+        await db.audios.delete(existing.audioId)
+        await db.audioBlobs.delete(existing.audioId)
       }
+      const workId = existing?.workId ?? target.workId
       const asset: AudioAsset = {
         id: newId(),
-        passageId: entry.passageId,
-        workId: passage.workId,
+        passageId: entry.clips.length > 1 ? null : (entry.clips[0]?.passageId ?? null),
+        workId,
         fileName: entry.fileName,
         mimeType: entry.mimeType,
         sizeBytes: entry.sizeBytes,
@@ -602,7 +677,14 @@ export async function importAudioZip(file: File): Promise<AudioImportResult> {
       }
       await db.audios.add(asset)
       await db.audioBlobs.add({ id: asset.id, blob })
-      await db.passages.update(entry.passageId, { audioId: asset.id, updatedAt: Date.now() })
+      for (const clip of entry.clips) {
+        await db.passages.update(clip.passageId, {
+          audioId: asset.id,
+          audioStartMs: clip.startMs,
+          audioEndMs: clip.endMs < 0 ? null : clip.endMs,
+          updatedAt: Date.now(),
+        })
+      }
     })
     imported += 1
   }

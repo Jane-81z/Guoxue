@@ -143,7 +143,13 @@ export function overallStats(
 }
 
 export function audioByPassageId(audios: AudioAsset[]): Map<string, AudioAsset> {
-  return new Map(audios.map((a) => [a.passageId, a]))
+  // 整篇录音（passageId 为 null）不进这张表——它由段落自己的 audioId + 区间决定
+  return new Map(
+    audios.filter((a): a is AudioAsset & { passageId: string } => !!a.passageId).map((a) => [
+      a.passageId,
+      a,
+    ]),
+  )
 }
 
 export function formatDuration(ms: number | null | undefined): string {

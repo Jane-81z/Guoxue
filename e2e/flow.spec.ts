@@ -101,7 +101,7 @@ test.describe('篇目页', () => {
     await page.goto('/library')
     const row = page.locator('li', { hasText: '山不在高' }).first()
     await expect(row.getByRole('button', { name: '编辑' })).toBeVisible()
-    await expect(row.getByRole('button', { name: '上传录音' })).toBeVisible()
+    await expect(row.getByRole('button', { name: '录音' })).toBeVisible()
     await expect(row.getByRole('button', { name: '不背' })).toBeVisible()
     await expect(row.getByRole('button', { name: '删除' })).toHaveCount(0)
 

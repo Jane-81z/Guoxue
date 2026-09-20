@@ -22,6 +22,7 @@ import { resolveTokens } from '../lib/pinyin'
 import { describePlan, planMatch, type MatchPlan } from '../lib/match'
 import { relativeDay } from '../lib/date'
 import AudioSplitSheet, { type SplitClip } from '../components/AudioSplitSheet'
+import RecordSheet from '../components/RecordSheet'
 import { fileToEnvelope } from '../lib/audioEnvelope'
 import type { Envelope } from '../lib/audioSplit'
 import type { AudioAsset, Passage, Settings, Work } from '../types'
@@ -433,11 +434,15 @@ function WorkCard({
               删除篇目
             </button>
           </div>
+          <p className="mb-3 readout text-[10px] leading-relaxed tracking-[0.12em] text-dim">
+            每段直接点「录音」即可。要用语音备忘录里已有的录音：先在语音备忘录里「存储到「文件」」，
+            再点「导入整篇录音」按停顿自动切段。
+          </p>
           <input
             ref={batchInputRef}
             type="file"
             aria-label="批量上传录音"
-            accept="audio/*"
+            accept="audio/*,.m4a,.mp3,.wav,.aac,.caf,.mp4"
             multiple
             className="hidden"
             onChange={(e) => {
@@ -449,7 +454,7 @@ function WorkCard({
             ref={wholeInputRef}
             type="file"
             aria-label="导入整篇录音"
-            accept="audio/*"
+            accept="audio/*,.m4a,.mp3,.wav,.aac,.caf,.mp4"
             className="hidden"
             onChange={(e) => {
               void handleWholeAudio(e.target.files)
@@ -714,6 +719,7 @@ function PassageRow({
   const [overrides, setOverrides] = useState<Record<string, string>>(passage.pinyinOverrides)
   const [showPinyinEditor, setShowPinyinEditor] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [recording, setRecording] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -923,9 +929,9 @@ function PassageRow({
               播放
             </button>
           ) : null}
-          <button type="button" className="chip" onClick={() => fileRef.current?.click()}>
+          <button type="button" className="chip" onClick={() => setRecording(true)}>
             <IconMic className="h-3.5 w-3.5" />
-            {hasAudio ? '替换录音' : '上传录音'}
+            {hasAudio ? '重录' : '录音'}
           </button>
           <button type="button" className="chip" onClick={() => setEditing(true)}>
             编辑
@@ -949,13 +955,26 @@ function PassageRow({
         ref={fileRef}
         type="file"
         aria-label={`上传第 ${index + 1} 段录音`}
-        accept="audio/*"
+        accept="audio/*,.m4a,.mp3,.wav,.aac,.caf,.mp4"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0]
           if (file) void uploadAudio(passage.id, file)
           e.target.value = ''
         }}
+      />
+
+      <RecordSheet
+        open={recording}
+        passageLabel={`第 ${index + 1} 段`}
+        workTitle={work.title}
+        fileBaseName={`${work.title}·第${index + 1}段`}
+        onUse={(file) => uploadAudio(passage.id, file)}
+        onPickFile={() => {
+          setRecording(false)
+          fileRef.current?.click()
+        }}
+        onClose={() => setRecording(false)}
       />
 
       <Dialog

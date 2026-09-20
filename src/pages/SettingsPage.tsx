@@ -19,6 +19,7 @@ import {
 } from '../lib/syncConfig'
 import { formatRelativeTime } from '../lib/selectors'
 import { formatBytes } from '../lib/format'
+import { GIST_CONTENT_LIMIT_BYTES } from '../lib/syncMerge'
 
 const APP_VERSION = '0.1.0'
 
@@ -193,6 +194,9 @@ export default function SettingsPage() {
 
   const toggleBand = (id: string) => setOpenBand((prev) => (prev === id ? null : id))
   const usingGist = settings.sync.provider === 'gist'
+  // Gist 单个文件：1 MB 以内直接返回全文，超过就只给前 1 MB（App 改读 raw_url，可用到 10 MB）
+  const overGistTruncation = (settings.sync.lastSizeBytes ?? 0) > GIST_CONTENT_LIMIT_BYTES
+  const nearGistCeiling = (settings.sync.lastSizeBytes ?? 0) > 8 * GIST_CONTENT_LIMIT_BYTES
   const syncReady = usingGist
     ? settings.sync.token.trim().length > 0
     : isValidSyncCode(settings.sync.code)
@@ -475,17 +479,15 @@ export default function SettingsPage() {
         {usingGist ? (
           <Band
             label="云端文件体积"
-            kicker="Gist 单个文件上限 1 MB"
+            kicker="超过 1 MB 走全文读取 · 10 MB 是硬上限"
             value={settings.sync.lastSizeBytes ? formatBytes(settings.sync.lastSizeBytes) : '—'}
-            tone={
-              settings.sync.lastSizeBytes && settings.sync.lastSizeBytes > 0.8 * 1024 * 1024
-                ? 'alert'
-                : 'dim'
-            }
+            tone={nearGistCeiling ? 'alert' : 'dim'}
             hint={
-              settings.sync.lastSizeBytes && settings.sync.lastSizeBytes > 0.8 * 1024 * 1024
-                ? '已经贴近上限，再导入长文可能读不回来'
-                : '超过 1 MB 时 GitHub 只返回前一半，会同步失败'
+              nearGistCeiling
+                ? '快碰到 GitHub 的 10 MB 硬上限了，先导出一份备份'
+                : overGistTruncation
+                  ? 'GitHub 只返回前 1 MB，App 会自动改读全文（稍慢，但内容完整）'
+                  : '1 MB 以内 GitHub 直接返回全文'
             }
           />
         ) : null}

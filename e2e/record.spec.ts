@@ -72,6 +72,15 @@ test.describe('段落录音', () => {
     await expect(page.getByRole('dialog')).toContainText('录音 · 第 1 段')
     await expect(page.getByRole('timer')).toHaveText('0:00')
 
+    // 面板里要能看着原文念（默认不带拼音，可当场开）
+    const sheet = page.getByRole('dialog').first()
+    await expect(sheet).toContainText('对着这一段念')
+    await expect(sheet).toContainText('子曰：学而时习之。')
+    await expect(sheet.locator('.ruby-text rt')).toHaveCount(0)
+    await sheet.getByRole('button', { name: '拼音 关' }).click()
+    await expect(sheet.getByRole('button', { name: '拼音 开' })).toBeVisible()
+    await expect(sheet.locator('.ruby-text rt').first()).toBeVisible()
+
     await page.getByRole('button', { name: '开始录音' }).click()
     await expect(page.getByRole('button', { name: '停止录音' })).toBeVisible()
     await expect(page.getByText('录音中请不要锁屏')).toBeVisible()

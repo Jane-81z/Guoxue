@@ -235,6 +235,14 @@
   letter-spacing: 0.02em;
 }
 
+/* 录音时要照着念，比正文大一号（跟着设置里的字号一起缩放） */
+.text-body-stage {
+  font-family: var(--c-font-body, theme('fontFamily.song'));
+  font-size: calc(20px * var(--body-font-scale, 1));
+  line-height: var(--body-line-height, 2.1);
+  letter-spacing: 0.02em;
+}
+
 .text-digit {
   font-family: var(--c-font-digit);
   font-variant-numeric: tabular-nums;

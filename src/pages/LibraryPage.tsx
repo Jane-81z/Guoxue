@@ -969,6 +969,9 @@ function PassageRow({
         passageLabel={`第 ${index + 1} 段`}
         workTitle={work.title}
         fileBaseName={`${work.title}·第${index + 1}段`}
+        tokens={tokens}
+        pinyinDefault={settings.pinyinVisible}
+        vertical={settings.vertical}
         onUse={(file) => uploadAudio(passage.id, file)}
         onPickFile={() => {
           setRecording(false)

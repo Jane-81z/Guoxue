@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import Sheet from './Sheet'
 import Dialog from './Dialog'
+import RubyText from './RubyText'
 import { formatMs } from '../lib/audioEnvelope'
 import { checkRecorderSupport, startRecording, type RecordingHandle } from '../lib/recorder'
+import type { RubyToken } from '../types'
 
 interface RecordSheetProps {
   open: boolean
@@ -12,6 +14,12 @@ interface RecordSheetProps {
   workTitle: string
   /** 文件名（不含扩展名） */
   fileBaseName: string
+  /** 要照着念的那一段：注音后的逐字 token */
+  tokens: RubyToken[]
+  /** 打开时拼音的默认显隐（跟设置里的开关一致） */
+  pinyinDefault: boolean
+  /** 正文竖排（跟设置一致） */
+  vertical: boolean
   onUse: (file: File) => void | Promise<void>
   /** 退回「选文件导入」那条老路 */
   onPickFile: () => void
@@ -32,12 +40,16 @@ export default function RecordSheet({
   passageLabel,
   workTitle,
   fileBaseName,
+  tokens,
+  pinyinDefault,
+  vertical,
   onUse,
   onPickFile,
   onClose,
 }: RecordSheetProps) {
   const support = checkRecorderSupport()
   const [phase, setPhase] = useState<Phase>('idle')
+  const [showPinyin, setShowPinyin] = useState(pinyinDefault)
   const [elapsedMs, setElapsedMs] = useState(0)
   const [levels, setLevels] = useState<number[]>([])
   const [file, setFile] = useState<File | null>(null)
@@ -68,8 +80,9 @@ export default function RecordSheet({
     setError(null)
     setBusy(false)
     setConfirmDiscard(false)
+    setShowPinyin(pinyinDefault)
     releaseUrl()
-  }, [open])
+  }, [open, pinyinDefault])
 
   // 离开这一页时别把麦克风留着
   useEffect(
@@ -246,37 +259,61 @@ export default function RecordSheet({
             </div>
           ) : null}
 
-          <div
-            className="border border-hairline bg-well px-3.5 py-4"
-            style={{ borderRadius: 'var(--c-radius)' }}
-          >
-            <div className="flex items-end justify-between gap-3">
+          {/* 仪表钉在顶上：念长文时往下滚，计时与电平也不会走掉 */}
+          <div className="sticky top-[-16px] z-10 -mx-4 border-b border-hairline bg-paper px-4 pb-3 pt-4">
+            <div className="flex items-center gap-3">
               <span
                 role="timer"
                 aria-label="录音计时"
-                className={`readout text-[42px] leading-none ${recording ? 'text-lit' : 'text-dim'}`}
+                className={`readout shrink-0 text-[42px] leading-none ${recording ? 'text-lit' : 'text-dim'}`}
               >
                 {formatMs(elapsedMs)}
               </span>
-              <span className="readout text-[10px] tracking-[0.18em] text-dim">
+              <span className="ml-auto shrink-0 readout text-[10px] tracking-[0.18em] text-dim">
                 {recording ? 'REC' : phase === 'ready' ? 'READY' : 'STANDBY'}
               </span>
             </div>
 
-            <div className="mt-3 flex h-[38px] items-end gap-[2px]" aria-label="录音电平">
+            <div className="mt-2 flex h-[26px] items-end gap-[2px]" aria-label="录音电平">
               {(levels.length ? levels : Array.from({ length: BAR_COUNT }, () => 0)).map(
                 (value, index) => (
                   <span
                     key={index}
                     className={`w-full ${recording ? 'bg-lit' : 'bg-hairline'}`}
                     style={{
-                      height: `${Math.max(3, Math.round(value * 38))}px`,
+                      height: `${Math.max(2, Math.round(value * 26))}px`,
                       borderRadius: '1px',
                       opacity: recording ? 0.4 + value * 0.6 : 1,
                     }}
                   />
                 ),
               )}
+            </div>
+          </div>
+
+          <div
+            className="min-h-[42vh] border border-hairline bg-well px-3.5 py-4"
+            style={{ borderRadius: 'var(--c-radius)' }}
+          >
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="readout text-[10px] tracking-[0.18em] text-dim">
+                对着这一段念
+              </span>
+              <button
+                type="button"
+                className={`chip ${showPinyin ? 'chip-active' : ''}`}
+                aria-pressed={showPinyin}
+                onClick={() => setShowPinyin((value) => !value)}
+              >
+                {showPinyin ? '拼音 开' : '拼音 关'}
+              </button>
+            </div>
+            <div
+              className={`text-body-stage text-fg ${
+                vertical ? 'text-vertical max-h-[54vh] overflow-x-auto' : ''
+              }`}
+            >
+              <RubyText tokens={tokens} showPinyin={showPinyin} />
             </div>
           </div>
 

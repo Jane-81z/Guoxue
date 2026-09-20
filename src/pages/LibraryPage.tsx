@@ -307,7 +307,7 @@ function WorkCard({
 
   return (
     <article className="panel overflow-hidden">
-      <div className="flex items-start gap-3 px-4 py-3.5">
+      <div className="flex items-start gap-3 px-4 pb-2.5 pt-3.5">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="truncate text-[20px] leading-tight text-fg">{work.title}</h2>
@@ -332,47 +332,6 @@ function WorkCard({
               .filter(Boolean)
               .join('・')}
           </p>
-
-          {/* 背景：贴文章背景（作者、成文缘由、读这段要知道的事），显示在标签下面 */}
-          {work.background ? (
-            <div
-              className="mt-2.5 bg-well px-3 py-2"
-              style={{ borderRadius: 'var(--c-radius-sm)' }}
-            >
-              <p className="readout text-[10px] tracking-[0.2em] text-dim">背景</p>
-              <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-fg-soft">
-                {work.background}
-              </p>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="mt-2.5 w-full border border-dashed border-hairline px-3 py-2 text-left text-[13px] text-dim active:bg-well"
-              style={{ borderRadius: 'var(--c-radius-sm)' }}
-              onClick={() => setMetaOpen(true)}
-            >
-              ＋ 贴一段背景（作者、朝代、写作缘由…）
-            </button>
-          )}
-
-          {/* 一列段码：要背的每一段一根，已背的点亮成绿 */}
-          <div className="mt-2.5 flex items-center gap-2">
-            <span className="flex flex-1 flex-wrap gap-[3px]">
-              {items
-                .filter((p) => p.isRecite)
-                .slice(0, 12)
-                .map((p) => (
-                  <i
-                    key={p.id}
-                    className={`h-1.5 flex-1 ${p.srs.history.length ? 'bg-done' : 'bg-lit/25'}`}
-                    style={{ borderRadius: 1 }}
-                  />
-                ))}
-            </span>
-            <span className="readout shrink-0 text-[10px] text-dim">
-              {progress.reviewedCount}/{progress.reciteCount} · {progress.mastery}
-            </span>
-          </div>
         </div>
         <div className="shrink-0 text-right">
           <span className="readout block text-[13px] text-dim">
@@ -397,6 +356,46 @@ function WorkCard({
             >
               <IconChevron className="h-4 w-4" />
             </button>
+          </span>
+        </div>
+      </div>
+
+      {/* 标签下面：背景占满整张卡的宽度（不再被右侧翻篇读数挤成半宽）+ 段码行 */}
+      <div className="px-4 pb-3">
+        {work.background ? (
+          <div className="bg-well px-3 py-2.5" style={{ borderRadius: 'var(--c-radius-sm)' }}>
+            <p className="readout text-[10px] tracking-[0.2em] text-dim">背景</p>
+            <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-[1.7] text-fg-soft">
+              {work.background}
+            </p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="w-full border border-dashed border-hairline px-3 py-2 text-left text-[13px] text-dim active:bg-well"
+            style={{ borderRadius: 'var(--c-radius-sm)' }}
+            onClick={() => setMetaOpen(true)}
+          >
+            ＋ 贴一段背景（作者、朝代、写作缘由…）
+          </button>
+        )}
+
+        {/* 一列段码：要背的每一段一根，已背的点亮成绿 */}
+        <div className="mt-2.5 flex items-center gap-2">
+          <span className="flex flex-1 flex-wrap gap-[3px]">
+            {items
+              .filter((p) => p.isRecite)
+              .slice(0, 12)
+              .map((p) => (
+                <i
+                  key={p.id}
+                  className={`h-1.5 flex-1 ${p.srs.history.length ? 'bg-done' : 'bg-lit/25'}`}
+                  style={{ borderRadius: 1 }}
+                />
+              ))}
+          </span>
+          <span className="readout shrink-0 text-[10px] text-dim">
+            {progress.reviewedCount}/{progress.reciteCount} · {progress.mastery}
           </span>
         </div>
       </div>

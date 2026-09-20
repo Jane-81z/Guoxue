@@ -128,6 +128,19 @@ test.describe('篇目页', () => {
       page.locator('article').getByText('庆历六年，范仲淹应好友滕子京之请而作，借洞庭湖之景抒忧乐之志。'),
     ).toBeVisible({ timeout: 15_000 })
 
+    // 背景块必须占满卡片内容宽度（曾经被右侧翻篇读数挤成半宽）
+    const widths = await page.locator('article').evaluate((card) => {
+      const paragraph = [...card.querySelectorAll('p')].find((node) =>
+        node.textContent?.includes('庆历六年'),
+      )
+      const box = paragraph?.parentElement
+      return {
+        cardInner: card.getBoundingClientRect().width - 32,
+        box: box ? box.getBoundingClientRect().width : 0,
+      }
+    })
+    expect(widths.box).toBeGreaterThanOrEqual(widths.cardInner * 0.95)
+
     // 重载后仍在
     await page.reload()
     await expect(

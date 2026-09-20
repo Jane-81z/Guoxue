@@ -62,6 +62,7 @@ test.describe('导入 → 标记 → 整篇复习 → 评分 → 打卡', () => 
     await startReciting(page)
 
     const head = page.locator('section .panel').first()
+    // 复习队列按到期日排（同一天到期时用添加顺序），与篇目页的「最新在前」是两套排序
     await expect(head).toContainText('论语·学而第一')
     await page.getByRole('button', { name: '跳过' }).click()
     await expect(head).toContainText('道德经·第一章')
@@ -78,10 +79,12 @@ test.describe('篇目页', () => {
 
     await page.goto('/library')
     const card = page.locator('article').first()
+    // 最近添加的排在最前面
+    await expect(card).toContainText('岳阳楼记')
     await expect(card).toContainText('第 01 / 共 02 篇')
 
     await page.getByRole('button', { name: '下一篇' }).click()
-    await expect(page.locator('article').first()).toContainText('岳阳楼记')
+    await expect(page.locator('article').first()).toContainText('论语·学而第一')
     await expect(page).toHaveURL(/work=/)
 
     const url = page.url()
@@ -89,7 +92,7 @@ test.describe('篇目页', () => {
     await expect(page.locator('article').first()).toContainText('第 02 / 共 02 篇')
 
     await page.getByRole('button', { name: '篇目一览' }).click()
-    await page.locator('button', { hasText: '论语·学而第一' }).first().click()
+    await page.locator('button', { hasText: '岳阳楼记' }).first().click()
     await expect(page.locator('article').first()).toContainText('第 01 / 共 02 篇')
   })
 
@@ -163,6 +166,36 @@ test.describe('篇目页', () => {
     await expect(
       page.locator('article').getByText('刘禹锡被贬和州时所作，以陋室自况，托物言志。'),
     ).toBeVisible({ timeout: 15_000 })
+  })
+
+  test('篇目页与播放列表都按添加顺序倒序：最近添加的在最前', async ({ page }) => {
+    await seedWork(page, { title: '第一篇', lines: ['一。'] })
+    await seedWork(page, { title: '第二篇', lines: ['二。'] })
+    await seedWork(page, { title: '第三篇', lines: ['三。'] })
+
+    // 篇目页：卡片是第三篇（最新），翻页顺序 第三 → 第二 → 第一
+    await page.goto('/library')
+    await expect(page.locator('article').first()).toContainText('第三篇')
+    await expect(page.locator('article').first()).toContainText('第 01 / 共 03 篇')
+    await page.getByRole('button', { name: '下一篇' }).click()
+    await expect(page.locator('article').first()).toContainText('第二篇')
+    await page.getByRole('button', { name: '下一篇' }).click()
+    await expect(page.locator('article').first()).toContainText('第一篇')
+
+    // 「篇目一览」抽屉里的顺序同样是 第三 → 第二 → 第一
+    await page.getByRole('button', { name: '篇目一览' }).click()
+    const drawerOrder = (await page.locator('ul li > button').allInnerTexts())
+      .slice(0, 3)
+      .map((text) => text.split('\n')[0])
+    expect(drawerOrder).toEqual(['第三篇', '第二篇', '第一篇'])
+    await page.getByRole('button', { name: '关闭' }).click()
+
+    // 播放列表：同样是第三篇在最前
+    await page.goto('/player')
+    const playerOrder = (await page.locator('ul li > button').allInnerTexts())
+      .slice(0, 3)
+      .map((text) => text.split('\n')[0])
+    expect(playerOrder).toEqual(['第三篇', '第二篇', '第一篇'])
   })
 })
 

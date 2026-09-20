@@ -21,6 +21,13 @@ async function syncNow(page: Page, expectLabel: 'Gist' | '新建 Gist') {
   })
 }
 
+/** 按标题跳到某一篇（不依赖卡片顺序） */
+async function openWork(page: Page, title: string) {
+  await page.goto('/library')
+  await page.getByRole('button', { name: '篇目一览' }).click()
+  await page.locator('ul li > button', { hasText: title }).first().click()
+}
+
 test.describe('云同步 · GitHub Gist', () => {
   test('第一台建设云端，第二台只贴同一个令牌就能拿到全部内容；改动与删除双向传播', async ({
     browser,
@@ -54,11 +61,11 @@ test.describe('云同步 · GitHub Gist', () => {
     await syncNow(desktop, 'Gist')
     await desktop.goto('/library')
     await desktop.getByRole('button', { name: '篇目一览' }).click()
-    await expect(desktop.getByText('道德经·第一章')).toBeVisible()
+    await expect(desktop.locator('ul li > button', { hasText: '道德经·第一章' })).toBeVisible()
 
     // 电脑：删掉道德经 → 同步；手机：同步 → 那篇消失，论语还在（墓碑生效）
     await desktop.getByRole('button', { name: '关闭' }).click()
-    await desktop.getByRole('button', { name: '下一篇' }).click()
+    await openWork(desktop, '道德经·第一章')
     await expect(desktop.locator('article').first()).toContainText('道德经·第一章')
     await desktop.getByRole('button', { name: '删除篇目' }).click()
     await desktop.getByRole('button', { name: '删除', exact: true }).click()

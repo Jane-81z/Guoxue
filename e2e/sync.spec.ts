@@ -20,6 +20,13 @@ async function syncNow(page: Page) {
   await expect(page.getByText(/已同步（Cloudflare）：拉取/)).toBeVisible({ timeout: 10_000 })
 }
 
+/** 按标题跳到某一篇（不依赖卡片顺序） */
+async function openWork(page: Page, title: string) {
+  await page.goto('/library')
+  await page.getByRole('button', { name: '篇目一览' }).click()
+  await page.locator('ul li > button', { hasText: title }).first().click()
+}
+
 test.describe('云同步（同步码，无账号）', () => {
   test('电脑导入 → 手机输入同一个码 → 内容出现；两端的改动与删除都会合并', async ({
     browser,
@@ -54,11 +61,13 @@ test.describe('云同步（同步码，无账号）', () => {
     await syncNow(desktop)
     await desktop.goto('/library')
     await desktop.getByRole('button', { name: '篇目一览' }).click()
-    await expect(desktop.getByText('道德经·第一章')).toBeVisible()
-    await expect(desktop.getByText('论语·学而第一').first()).toBeVisible()
+    // 断言限定在抽屉的行里：当前卡片也会显示同样的标题
+    await expect(desktop.locator('ul li > button', { hasText: '道德经·第一章' })).toBeVisible()
+    await expect(desktop.locator('ul li > button', { hasText: '论语·学而第一' })).toBeVisible()
     await desktop.getByRole('button', { name: '关闭' }).click()
 
     // 电脑：删掉论语 → 同步；手机：同步 → 那一篇消失，道德经还在（墓碑生效）
+    await openWork(desktop, '论语·学而第一')
     await desktop.getByRole('button', { name: '删除篇目' }).click()
     await desktop.getByRole('button', { name: '删除', exact: true }).click()
     await syncNow(desktop)

@@ -112,7 +112,8 @@ export async function loadSnapshot(): Promise<AppSnapshot> {
     db.dailyStats.toArray(),
     getSettings(),
   ])
-  works.sort((a, b) => a.createdAt - b.createdAt)
+  // 全站默认顺序：最近添加的篇目排在最前
+  works.sort((a, b) => b.createdAt - a.createdAt)
   passages.sort((a, b) => a.workId.localeCompare(b.workId) || a.order - b.order)
   dailyStats.sort((a, b) => a.date.localeCompare(b.date))
   return { works, passages, audios, dailyStats, settings }

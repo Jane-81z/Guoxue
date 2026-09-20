@@ -59,7 +59,8 @@ function WorkPicker() {
             withAudio: items.filter((p) => p.audioId).length,
           }
         })
-        .sort((a, b) => b.withAudio - a.withAudio || a.work.createdAt - b.work.createdAt),
+        // 与篇目页一致：按添加顺序倒序，最近添加的在最前
+        .sort((a, b) => b.work.createdAt - a.work.createdAt),
     [works, passages],
   )
 

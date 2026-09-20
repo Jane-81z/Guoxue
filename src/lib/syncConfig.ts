@@ -32,6 +32,8 @@ export interface SyncConfig {
   api: string
   auto: boolean
   lastSyncedAt: number | null
+  /** 上一次推上云端的载荷体积（UTF-8 字节），用来盯住 GitHub 的 1 MB 截断线 */
+  lastSizeBytes: number | null
 }
 
 export const DEFAULT_SYNC_CONFIG: SyncConfig = {
@@ -43,6 +45,7 @@ export const DEFAULT_SYNC_CONFIG: SyncConfig = {
   api: DEFAULT_GITHUB_API,
   auto: false,
   lastSyncedAt: null,
+  lastSizeBytes: null,
 }
 
 export function generateSyncCode(length = SYNC_CODE_LENGTH): string {

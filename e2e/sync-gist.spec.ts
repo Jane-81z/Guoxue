@@ -81,6 +81,48 @@ test.describe('云同步 · GitHub Gist', () => {
     await phoneCtx.close()
   })
 
+  test('云端文件被 1 MB 截断时自动改读全文；上传的载荷不含注音缓存', async ({
+    browser,
+    request,
+  }) => {
+    const TRUNC_TOKEN = 'ghp_e2e_truncation_token'
+    const desktopCtx = await browser.newContext()
+    const desktop = await desktopCtx.newPage()
+
+    await seedWork(desktop, {
+      title: '长文·逍遥游',
+      lines: ['北冥有鱼，其名为鲲。', '鲲之大，不知其几千里也。'],
+    })
+    await configureGistSync(desktop, TRUNC_TOKEN)
+    await syncNow(desktop, '新建 Gist')
+
+    // 上传到云端的那份文件里，注音缓存已经换成 null（它比正文大十几倍，正是顶到 1 MB 的元凶）
+    const stored = await request.get(`${GITHUB_API}/test/file`, {
+      headers: { authorization: `Bearer ${TRUNC_TOKEN}` },
+    })
+    const { content } = (await stored.json()) as { content: string | null }
+    expect(content).toContain('北冥有鱼')
+    expect(content).not.toMatch(/"pinyinCache":\[/)
+    expect(content).toMatch(/"pinyinCache":null/)
+
+    // 把替身的截断线压到 200 字节：任何读回来的 content 都是半截 JSON（真实环境的 1 MB 截断）
+    await request.post(`${GITHUB_API}/test/truncate-limit`, { data: { bytes: 200 } })
+    try {
+      const phoneCtx = await browser.newContext()
+      const phone = await phoneCtx.newPage()
+      await configureGistSync(phone, TRUNC_TOKEN)
+      // 能走到「已同步」而不是 JSON 报错，就说明它改用了 raw_url 读全文
+      await syncNow(phone, 'Gist')
+      await phone.goto('/library')
+      await expect(phone.locator('article').first()).toContainText('长文·逍遥游')
+      await phoneCtx.close()
+    } finally {
+      await request.post(`${GITHUB_API}/test/truncate-limit`, { data: { bytes: 0 } })
+    }
+
+    await desktopCtx.close()
+  })
+
   test('没令牌时同步按钮会引导去粘贴令牌', async ({ page }) => {
     await page.goto('/settings')
     await expect(page.getByRole('button', { name: '请先粘贴令牌' })).toBeVisible()

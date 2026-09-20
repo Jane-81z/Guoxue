@@ -14,7 +14,7 @@ import { createSrsState, schedule } from '../lib/srs'
 import { todayKey } from '../lib/date'
 import { planMatch, type MatchPlan } from '../lib/match'
 import { DEFAULT_SYNC_CONFIG } from '../lib/syncConfig'
-import { buildPayload, isPayload, type SyncPayload } from '../lib/syncMerge'
+import { buildPayload, isPayload, slimPayload, type SyncPayload } from '../lib/syncMerge'
 import { DEFAULT_THEME_ID } from '../theme/themes'
 import {
   BACKUP_APP_ID,
@@ -716,20 +716,46 @@ export async function clearAllData(): Promise<void> {
 
 export async function loadSyncPayload(): Promise<SyncPayload> {
   const snapshot = await loadSnapshot()
-  return buildPayload({
-    works: snapshot.works,
-    passages: snapshot.passages,
-    dailyStats: snapshot.dailyStats,
-    tombstones: await listTombstones(),
-  })
+  return slimPayload(
+    buildPayload({
+      works: snapshot.works,
+      passages: snapshot.passages,
+      dailyStats: snapshot.dailyStats,
+      tombstones: await listTombstones(),
+    }),
+  )
+}
+
+/** 段落内容完全一致（原文与人工修正都没变）时，本机已算好的注音缓存可以留着用 */
+function sameOverrideSet(a: Record<string, string>, b: Record<string, string>): boolean {
+  const ka = Object.keys(a ?? {})
+  const kb = Object.keys(b ?? {})
+  if (ka.length !== kb.length) return false
+  return ka.every((key) => a[key] === b[key])
 }
 
 /**
  * 把合并结果写回本地。录音不参与同步：段落上的 audioId 原样保留，
  * 本机没有对应音频时播放会提示「录音数据缺失」，不会静默出错。
+ * 同步载荷里的 pinyinCache 是空的（见 slimPayload），这里把本机已有的缓存补回去，
+ * 免得同步一次就把所有注音重算一遍。
  */
 export async function applySyncPayload(payload: SyncPayload): Promise<void> {
   if (!isPayload(payload)) throw new Error('云端数据格式不认识')
+  const localPassages = new Map(
+    (await db.passages.bulkGet(payload.passages.map((p) => p.id)))
+      .filter((row): row is Passage => Boolean(row))
+      .map((row) => [row.id, row]),
+  )
+  const passages = payload.passages.map((passage) => {
+    if (passage.pinyinCache) return passage
+    const local = localPassages.get(passage.id)
+    const reusable =
+      local && local.text === passage.text && sameOverrideSet(local.pinyinOverrides, passage.pinyinOverrides)
+        ? local.pinyinCache
+        : null
+    return reusable ? { ...passage, pinyinCache: reusable } : passage
+  })
   await db.transaction(
     'rw',
     db.works,
@@ -744,7 +770,7 @@ export async function applySyncPayload(payload: SyncPayload): Promise<void> {
         db.tombstones.clear(),
       ])
       if (payload.works.length) await db.works.bulkPut(payload.works)
-      if (payload.passages.length) await db.passages.bulkPut(payload.passages)
+      if (passages.length) await db.passages.bulkPut(passages)
       if (payload.dailyStats.length) await db.dailyStats.bulkPut(payload.dailyStats)
       const rows = Object.entries(payload.tombstones).map(([id, deletedAt]) => ({ id, deletedAt }))
       if (rows.length) await db.tombstones.bulkPut(rows)

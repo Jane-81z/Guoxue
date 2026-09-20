@@ -6,6 +6,8 @@ import {
   emptyPayload,
   isPayload,
   mergePayloads,
+  payloadBytes,
+  slimPayload,
   type SyncPayload,
 } from './syncMerge'
 import type { DailyStat, Passage, Work } from '../types'
@@ -169,5 +171,45 @@ describe('buildPayload / isPayload', () => {
     expect(isPayload(null)).toBe(false)
     expect(isPayload('nope')).toBe(false)
     expect(isPayload(emptyPayload(NOW))).toBe(true)
+  })
+})
+
+describe('slimPayload / payloadBytes', () => {
+  /** 一段 500 字的正文：注音缓存体积是正文的十几倍，正是它把云端顶过 1 MB */
+  const text = '子曰學而時習之不亦說乎'.repeat(50)
+  const cache = JSON.stringify(
+    Array.from(text).map((char, index) => ({ index, char, pinyin: 'zǐ' })),
+  )
+
+  function withCache(): SyncPayload {
+    const heavy = buildPayload(
+      { works: [], passages: [passage('p1', text, NOW)], dailyStats: [], tombstones: {} },
+      NOW,
+    )
+    heavy.passages[0].pinyinCache = cache
+    return heavy
+  }
+
+  it('把注音缓存换成 null，其余字段一个不动', () => {
+    const slimmed = slimPayload(withCache())
+    expect(slimmed.passages[0].pinyinCache).toBeNull()
+    expect(slimmed.passages[0].text).toBe(text)
+    expect(slimmed.passages[0].id).toBe('p1')
+    expect(slimmed.schemaVersion).toBe(SYNC_SCHEMA_VERSION)
+  })
+
+  it('瘦身后载荷小得多，且体积按 UTF-8 字节算', () => {
+    const before = payloadBytes(withCache())
+    const after = payloadBytes(slimPayload(withCache()))
+    expect(after).toBeLessThan(before / 5)
+    expect(after).toBe(new TextEncoder().encode(JSON.stringify(slimPayload(withCache()))).length)
+  })
+
+  it('本来就没有缓存的段落原样带走', () => {
+    const light = buildPayload(
+      { works: [], passages: [passage('p1', text, NOW)], dailyStats: [], tombstones: {} },
+      NOW,
+    )
+    expect(slimPayload(light).passages[0]).toBe(light.passages[0])
   })
 })

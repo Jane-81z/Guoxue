@@ -172,6 +172,32 @@ export function buildPayload(
   }
 }
 
+/**
+ * 同步载荷瘦身：去掉派生出来的注音缓存。
+ *
+ * pinyinCache 是「原文 + 人工修正」的纯派生结果，读端拿不到时会自动重算
+ * （见 lib/pinyin.ts 的 resolveTokens），但它的体积是正文的十几倍
+ * ——实测约 49 字节/汉字，而原文本身才 3 字节/汉字。
+ * 云端的 GitHub Gist 对单个文件只返回前 1 MB，缓存会把这份载荷顶过线、
+ * 读回来就是半截 JSON（「JSON 字符串未终止」）。
+ */
+export function slimPayload(payload: SyncPayload): SyncPayload {
+  return {
+    ...payload,
+    passages: payload.passages.map((passage) =>
+      passage.pinyinCache ? { ...passage, pinyinCache: null } : passage,
+    ),
+  }
+}
+
+/** 云端文件的实际体积（UTF-8 字节数，Gist 的 1 MB 上限就是按它算的） */
+export function payloadBytes(payload: SyncPayload): number {
+  return new TextEncoder().encode(JSON.stringify(payload)).length
+}
+
+/** GitHub Gist 单个文件的内容上限：超过就只返回前 1 MB */
+export const GIST_CONTENT_LIMIT_BYTES = 1024 * 1024
+
 export function isPayload(value: unknown): value is SyncPayload {
   if (!value || typeof value !== 'object') return false
   const candidate = value as Partial<SyncPayload>

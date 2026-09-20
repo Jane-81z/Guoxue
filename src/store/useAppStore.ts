@@ -5,7 +5,8 @@ import type { ImportWorkInput } from '../db/repo'
 import type { MatchPlan } from '../lib/match'
 import { splitPassages } from '../lib/split'
 import { DEFAULT_SYNC_ENDPOINT, isValidSyncCode, normalizeSyncCode } from '../lib/syncConfig'
-import { mergePayloads } from '../lib/syncMerge'
+import { mergePayloads, payloadBytes, slimPayload } from '../lib/syncMerge'
+import { formatBytes } from '../lib/format'
 import { pullPayload, pushPayload } from '../lib/syncClient'
 import { createGist, findGist, readGist, writeGist } from '../lib/syncGist'
 
@@ -323,28 +324,38 @@ export const useAppStore = create<AppState>()((set, get) => ({
       const { payload, pulledIn, purged } = mergePayloads(local, remote)
       await repo.applySyncPayload(payload)
 
+      // 上传前再瘦一次身：远端带回来的旧载荷里可能还留着注音缓存，
+      // 它会把云端文件顶过 GitHub 的 1 MB 截断线
+      const outgoing = slimPayload(payload)
+      const bytes = payloadBytes(outgoing)
+
       if (sync.provider === 'gist') {
         const token = sync.token.trim()
         const api = sync.api
         const gistId = persist.gistId || (await findGist(api, token)) || ''
         if (gistId && remote) {
-          await writeGist(api, token, gistId, payload)
+          await writeGist(api, token, gistId, outgoing)
         } else {
-          const created = await createGist(api, token, payload)
+          const created = await createGist(api, token, outgoing)
           persist = { ...persist, gistId: created }
         }
       } else {
-        await pushPayload(sync.endpoint || DEFAULT_SYNC_ENDPOINT, normalizeSyncCode(sync.code), payload)
+        await pushPayload(
+          sync.endpoint || DEFAULT_SYNC_ENDPOINT,
+          normalizeSyncCode(sync.code),
+          outgoing,
+        )
       }
 
       const next = await repo.saveSettings({
-        sync: { ...sync, ...persist, lastSyncedAt: Date.now() },
+        sync: { ...sync, ...persist, lastSyncedAt: Date.now(), lastSizeBytes: bytes },
       })
       set({ settings: next })
       await get().refresh()
       const parts = [`已同步（${where}）：拉取 ${pulledIn} 条`]
       if (purged) parts.push(`清理 ${purged} 条已删除`)
-      parts.push(`云端现有 ${payload.works.length} 篇 / ${payload.passages.length} 段`)
+      parts.push(`云端现有 ${outgoing.works.length} 篇 / ${outgoing.passages.length} 段`)
+      parts.push(`体积 ${formatBytes(bytes)}`)
       get().notify(parts.join('，'), 'success')
     } catch (err) {
       get().notify(err instanceof Error ? err.message : '同步失败', 'error')

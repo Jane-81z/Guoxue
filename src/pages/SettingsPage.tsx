@@ -18,6 +18,7 @@ import {
   DEFAULT_GITHUB_API,
 } from '../lib/syncConfig'
 import { formatRelativeTime } from '../lib/selectors'
+import { formatBytes } from '../lib/format'
 
 const APP_VERSION = '0.1.0'
 
@@ -188,12 +189,6 @@ export default function SettingsPage() {
     })
     downloadBlob(new Blob([ics], { type: 'text/calendar;charset=utf-8' }), '国学背诵-每日提醒.ics')
     notify('日历文件已下载，导入「日历」App 即可每日提醒', 'success')
-  }
-
-  const formatSize = (bytes: number) => {
-    if (!bytes) return '0 MB'
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   }
 
   const toggleBand = (id: string) => setOpenBand((prev) => (prev === id ? null : id))
@@ -477,13 +472,30 @@ export default function SettingsPage() {
           value={settings.sync.lastSyncedAt ? formatRelativeTime(settings.sync.lastSyncedAt) : '—'}
           tone={settings.sync.lastSyncedAt ? 'done' : 'dim'}
         />
+        {usingGist ? (
+          <Band
+            label="云端文件体积"
+            kicker="Gist 单个文件上限 1 MB"
+            value={settings.sync.lastSizeBytes ? formatBytes(settings.sync.lastSizeBytes) : '—'}
+            tone={
+              settings.sync.lastSizeBytes && settings.sync.lastSizeBytes > 0.8 * 1024 * 1024
+                ? 'alert'
+                : 'dim'
+            }
+            hint={
+              settings.sync.lastSizeBytes && settings.sync.lastSizeBytes > 0.8 * 1024 * 1024
+                ? '已经贴近上限，再导入长文可能读不回来'
+                : '超过 1 MB 时 GitHub 只返回前一半，会同步失败'
+            }
+          />
+        ) : null}
 
         <GroupLabel>数据 DATA</GroupLabel>
         <Band
           label="篇目与段落"
           kicker="篇 / 段 / 录音"
           value={`${works.length} / ${passages.length} / ${audios.length}`}
-          hint={storage ? `已占用 ${formatSize(storage.usage)}` : undefined}
+          hint={storage ? `已占用 ${formatBytes(storage.usage)}` : undefined}
         />
         <Band
           label="导出数据"

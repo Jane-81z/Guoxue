@@ -142,13 +142,6 @@ function PlaylistView({ workId }: { workId: string }) {
   const current = items.find((p) => p.id === currentId)
   const hasAudio = audioIds.length > 0
 
-  /** 整篇连播：从第一段有录音的地方开始，一段接一段放到底（不接上次的进度） */
-  const playAll = () => {
-    if (!audioIds.length) return
-    loadWork(workId, audioIds, audioIds[0])
-    void playPassage(audioIds[0], { resume: false })
-  }
-
   return (
     <>
       <PageHeader
@@ -165,17 +158,7 @@ function PlaylistView({ workId }: { workId: string }) {
               这一篇还没有录音。到「篇目」页展开本篇，给每段上传音频即可。
             </p>
           </div>
-        ) : (
-          <div className="mb-3 flex items-center gap-2">
-            <button type="button" className="btn btn-primary" onClick={playAll}>
-              <IconPlay className="h-4 w-4" />
-              整篇连播
-            </button>
-            <span className="readout text-[10px] leading-relaxed tracking-[0.12em] text-dim">
-              从第 1 段有录音的地方连着放到底；点列表里某一段才接着上次听的位置
-            </span>
-          </div>
-        )}
+        ) : null}
 
         <ul className="space-y-1.5">
           {items.map((passage, index) => {
@@ -235,6 +218,8 @@ function PlayerBar({ label }: { label: string }) {
   const rate = usePlayerStore((s) => s.rate)
   const repeatCount = usePlayerStore((s) => s.repeatCount)
   const mode = usePlayerStore((s) => s.mode)
+  const queue = usePlayerStore((s) => s.queue)
+  const playPassage = usePlayerStore((s) => s.playPassage)
   const error = usePlayerStore((s) => s.error)
   const toggle = usePlayerStore((s) => s.toggle)
   const next = usePlayerStore((s) => s.next)
@@ -275,6 +260,10 @@ function PlayerBar({ label }: { label: string }) {
               const nextMode: PlayMode =
                 mode === 'sequence' ? 'repeatAll' : mode === 'repeatAll' ? 'repeatOne' : 'sequence'
               setMode(nextMode)
+              // 点成「整篇」时，如果此刻没在播，就从第一段有录音的地方连着放
+              if (nextMode === 'repeatAll' && !isPlaying && queue.length) {
+                void playPassage(queue[0], { resume: false })
+              }
             }}
           >
             {mode === 'repeatOne' ? (

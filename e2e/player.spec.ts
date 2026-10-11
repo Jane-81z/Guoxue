@@ -45,7 +45,10 @@ test.describe('播放列表', () => {
     await page.getByRole('button', { name: /庄子·逍遥游/ }).first().click()
     await expect(page).toHaveURL(/\/player\//)
     const range = page.locator('input[type=range]')
-    await expect(page.getByRole('button', { name: '整篇连播' })).toBeVisible()
+    const modeKey = page.getByRole('button', { name: '循环模式' })
+    await expect(modeKey).toHaveText('顺序')
+    // 界面上没有多加的键：整篇连播就靠下面这个模式键
+    await expect(page.getByRole('button', { name: '整篇连播' })).toHaveCount(0)
 
     // 先手动听第 2 段到 6 秒再暂停：这一步会把「第 2 段听到 6 秒」记进设置
     await page.locator('li button', { hasText: '化而为鸟' }).first().click()
@@ -55,8 +58,9 @@ test.describe('播放列表', () => {
     const savedPosition = Number(await range.inputValue())
     expect(savedPosition).toBeGreaterThan(5)
 
-    // 整篇连播：从第一段开头起
-    await page.getByRole('button', { name: '整篇连播' }).click()
+    // 点「整篇」那个模式键：从第一段开头连着放整篇
+    await modeKey.click()
+    await expect(modeKey).toHaveText('整篇')
     await page.waitForTimeout(700)
     expect(Number(await range.inputValue())).toBeLessThan(1.5)
 

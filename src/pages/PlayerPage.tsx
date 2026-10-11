@@ -142,6 +142,13 @@ function PlaylistView({ workId }: { workId: string }) {
   const current = items.find((p) => p.id === currentId)
   const hasAudio = audioIds.length > 0
 
+  /** 整篇连播：从第一段有录音的地方开始，一段接一段放到底（不接上次的进度） */
+  const playAll = () => {
+    if (!audioIds.length) return
+    loadWork(workId, audioIds, audioIds[0])
+    void playPassage(audioIds[0], { resume: false })
+  }
+
   return (
     <>
       <PageHeader
@@ -158,7 +165,17 @@ function PlaylistView({ workId }: { workId: string }) {
               这一篇还没有录音。到「篇目」页展开本篇，给每段上传音频即可。
             </p>
           </div>
-        ) : null}
+        ) : (
+          <div className="mb-3 flex items-center gap-2">
+            <button type="button" className="btn btn-primary" onClick={playAll}>
+              <IconPlay className="h-4 w-4" />
+              整篇连播
+            </button>
+            <span className="readout text-[10px] leading-relaxed tracking-[0.12em] text-dim">
+              从第 1 段有录音的地方连着放到底；点列表里某一段才接着上次听的位置
+            </span>
+          </div>
+        )}
 
         <ul className="space-y-1.5">
           {items.map((passage, index) => {
@@ -174,7 +191,7 @@ function PlaylistView({ workId }: { workId: string }) {
                       ? 'border-ink/25 bg-paper-deep'
                       : 'border-transparent hover:bg-paper-deep/50'
                   } ${playable ? '' : 'opacity-45'}`}
-                  onClick={() => void playPassage(passage.id)}
+                  onClick={() => void playPassage(passage.id, { resume: true })}
                 >
                   <span className="w-5 shrink-0 text-center text-xs tabular-nums text-ink-faint">
                     {index + 1}

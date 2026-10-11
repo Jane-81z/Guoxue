@@ -740,7 +740,8 @@ function PassageRow({
   const handlePlay = () => {
     const audioIds = siblings.filter((p) => p.audioId).map((p) => p.id)
     loadWork(work.id, audioIds, passage.id)
-    void playPassage(passage.id)
+    // 亲手点「播放」的这一段，接着上次听的位置
+    void playPassage(passage.id, { resume: true })
   }
 
   const handleSave = async () => {

@@ -22,7 +22,12 @@ interface PlayerState {
   error: string | null
 
   loadWork: (workId: string, passageIds: string[], startPassageId?: string) => void
-  playPassage: (passageId: string) => Promise<void>
+  /**
+   * 播放某一段。
+   * `resume: true` 才接着这段上次听到的位置播（只有「用户亲手点了这一段」才用它）；
+   * 自动接续、上一段/下一段一律从头开始，不然跳段会从半截里冒出来。
+   */
+  playPassage: (passageId: string, options?: { resume?: boolean }) => Promise<void>
   toggle: () => void
   pause: () => void
   resume: () => void
@@ -159,10 +164,19 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     })
   },
 
-  playPassage: async (passageId) => {
+  playPassage: async (passageId, options) => {
+    const resume = options?.resume === true
     const app = useAppStore.getState()
     const passage = app.passages.find((p) => p.id === passageId)
     if (!passage) return
+
+    // 用户点的就是当前这一段：接着播，别重新定位。
+    // resume=false（整篇连播、跳段）时不算，那种情况要老老实实从这一段的开头起。
+    if (resume && get().currentPassageId === passageId && audioEl?.src) {
+      if (!get().isPlaying) get().resume()
+      return
+    }
+
     const queue = get().queue.includes(passageId) ? get().queue : [passageId]
     const index = Math.max(0, queue.indexOf(passageId))
     const clipStart = (passage.audioStartMs ?? 0) / 1000
@@ -190,7 +204,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       if (audio.src !== url) await loadSource(audio, url)
       audio.playbackRate = get().rate
       // 位置按「段内相对时间」保存，避免整篇音频里各段互相干扰
-      const saved = app.settings.player.positions[passageId] ?? 0
+      const saved = resume ? app.settings.player.positions[passageId] ?? 0 : 0
       const clipLength = (clipEnd ?? audio.duration) - clipStart
       if (saved > 3 && Number.isFinite(clipLength) && saved < clipLength - 3) {
         audio.currentTime = clipStart + saved
@@ -244,7 +258,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     const { queue, index } = get()
     if (!queue.length) return
     const nextIndex = index + 1 < queue.length ? index + 1 : 0
-    void get().playPassage(queue[nextIndex])
+    void get().playPassage(queue[nextIndex], { resume: false })
   },
 
   prev: () => {
@@ -257,7 +271,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       return
     }
     const prevIndex = index - 1 >= 0 ? index - 1 : queue.length - 1
-    void get().playPassage(queue[prevIndex])
+    void get().playPassage(queue[prevIndex], { resume: false })
   },
 
   seek: (time) => {

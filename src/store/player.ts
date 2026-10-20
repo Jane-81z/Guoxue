@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { PlayMode } from '../types'
 import { getAudioBlob } from '../db/repo'
 import { useAppStore } from './useAppStore'
+import { createScreenWakeLock, type WakeLockNavigator } from '../lib/wakeLock'
 
 interface PlayerState {
   queue: string[]
@@ -44,6 +45,9 @@ interface PlayerState {
 let audioEl: HTMLAudioElement | null = null
 const urlCache = new Map<string, string>()
 let lastPositionSave = 0
+const screenWakeLock = createScreenWakeLock(
+  typeof navigator === 'undefined' ? undefined : (navigator as unknown as WakeLockNavigator),
+)
 
 function releaseUrl(audioId: string) {
   const url = urlCache.get(audioId)
@@ -305,6 +309,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     audio.pause()
     audio.removeAttribute('src')
     set({ isPlaying: false, currentTime: 0, duration: 0 })
+    void screenWakeLock.release()
   },
 
   clearError: () => set({ error: null }),
@@ -336,10 +341,27 @@ function handleEnded() {
   }
   savePosition(true)
   usePlayerStore.setState({ isPlaying: false, currentTime: 0 })
+  void screenWakeLock.release()
 }
 
 function setupAudioListeners() {
   const audio = getAudio()
+  // 播放期间按住屏幕常亮；暂停 600ms 后才放掉，避开段与段交界处 pause→play 的瞬间
+  let releaseScreenTimer: number | null = null
+  const holdScreenOn = () => {
+    if (releaseScreenTimer != null) {
+      window.clearTimeout(releaseScreenTimer)
+      releaseScreenTimer = null
+    }
+    void screenWakeLock.acquire()
+  }
+  const releaseScreenSoon = () => {
+    if (releaseScreenTimer != null) window.clearTimeout(releaseScreenTimer)
+    releaseScreenTimer = window.setTimeout(() => {
+      releaseScreenTimer = null
+      void screenWakeLock.release()
+    }, 600)
+  }
   audio.addEventListener('timeupdate', () => {
     const { clipStart, clipEnd } = usePlayerStore.getState()
     const relative = Math.max(0, audio.currentTime - clipStart)
@@ -357,12 +379,25 @@ function setupAudioListeners() {
     const length = (clipEnd ?? audio.duration) - clipStart
     if (Number.isFinite(length)) usePlayerStore.setState({ duration: length })
   })
-  audio.addEventListener('play', () => usePlayerStore.setState({ isPlaying: true }))
-  audio.addEventListener('pause', () => usePlayerStore.setState({ isPlaying: false }))
+  audio.addEventListener('play', () => {
+    usePlayerStore.setState({ isPlaying: true })
+    holdScreenOn()
+  })
+  audio.addEventListener('pause', () => {
+    usePlayerStore.setState({ isPlaying: false })
+    releaseScreenSoon()
+  })
   audio.addEventListener('ended', handleEnded)
   audio.addEventListener('error', () => {
     if (!audio.src) return
     usePlayerStore.setState({ error: '播放中断，可能格式不受支持', isPlaying: false })
+    void screenWakeLock.release()
+  })
+  // 锁屏/切后台时系统会自动释放常亮锁；回到前台继续播时再申请一次
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && usePlayerStore.getState().isPlaying) {
+      holdScreenOn()
+    }
   })
   if ('mediaSession' in navigator) {
     try {

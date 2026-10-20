@@ -95,4 +95,44 @@ test.describe('播放列表', () => {
     await page.waitForTimeout(400)
     expect(Number(await range.inputValue())).toBeGreaterThan(savedPosition - 2)
   })
+
+  test('播放时申请屏幕常亮，暂停后释放，继续播再申请', async ({ page }) => {
+    await page.addInitScript(() => {
+      const state = { requests: 0, releases: 0 }
+      ;(window as unknown as { __wake: typeof state }).__wake = state
+      Object.defineProperty(navigator, 'wakeLock', {
+        configurable: true,
+        value: {
+          request: async () => {
+            state.requests += 1
+            return {
+              release: async () => {
+                state.releases += 1
+              },
+              addEventListener: () => undefined,
+            }
+          },
+        },
+      })
+    })
+
+    await seedWork(page, { title: '常亮测试', lines: ['学而时习之。'] })
+    await page.goto('/library')
+    await attachAudio(page, 1, 'wake.wav', 10)
+    await expect(page.getByText(/已添加录音/)).toBeVisible()
+
+    await page.goto('/player')
+    await page.getByRole('button', { name: /常亮测试/ }).first().click()
+    await page.locator('li button', { hasText: '学而时习之' }).first().click()
+
+    const wake = () =>
+      page.evaluate(() => (window as unknown as { __wake: { requests: number; releases: number } }).__wake)
+    await expect.poll(async () => (await wake()).requests).toBeGreaterThan(0)
+
+    await page.getByLabel('暂停').click()
+    await expect.poll(async () => (await wake()).releases).toBeGreaterThan(0)
+
+    await page.getByRole('button', { name: '播放', exact: true }).click()
+    await expect.poll(async () => (await wake()).requests).toBeGreaterThan(1)
+  })
 })
